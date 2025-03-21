@@ -41,8 +41,8 @@ class Polygon {
         this.y = y;
         this.pushX = 0
         this.pushY = 0
-        this.velX = 0.2 / Math.pow(1.6, (sides-3))
-        this.velY = 0.2 / Math.pow(1.6, (sides-3))
+        this.velX = 0.4 / Math.pow(1.6, (sides-3))
+        this.velY = 0.4 / Math.pow(1.6, (sides-3))
         this.size = 10 * Math.pow(1.55, (sides-3))
         this.sides = sides;
         let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
@@ -70,7 +70,7 @@ class Polygon {
         ctx.restore()
     }
     move() {
-        this.angle += 0.1/this.size
+        this.angle += 0.05/this.size
 
         this.x += this.pushX
         this.y += this.pushY
@@ -80,7 +80,7 @@ class Polygon {
     }
 }
 let polys = []
-for (let i = 0; i < 200; i++) {
+for (let i = 0; i < 20; i++) {
     let poly = new Polygon(canvas.width/2,canvas.height/2, 3+Math.floor(Math.random()*8))
     polys.push(poly)
 }
