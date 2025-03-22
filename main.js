@@ -49,6 +49,7 @@ export class Polygon {
         this.r = 255;
         this.g = 0;
         this.b = 0;
+        this.xp = 2*(Math.pow(5,sides))
         this.misshapen = Math.random() < 0.1
         this.y = y;
         this.pushX = 0
@@ -93,7 +94,7 @@ export class Polygon {
         this.y += this.velY*Math.sin(this.angle)
     }
 }
-let sp = new Spawner(0, 500, 8, Polygon, globalPolygons, canvas)
+let sp = new Spawner(0, 500, 10, Polygon, globalPolygons, canvas)
 
 setInterval(()=>{
     sp.spawnLoop()
@@ -118,6 +119,13 @@ setInterval(() => {
         }
     })
 },1000/15)
+function checkXPs() {
+    for (let i = 3; i <= 10; i++) {
+        console.log(2*(Math.pow(5,i)))
+    }
+}
+
+checkXPs()
 setInterval(() => {
     globalPolygons.forEach((poly) => {
         poly.move()
