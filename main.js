@@ -1,5 +1,10 @@
 const canvas = document.getElementById("c")
-,           ctx = canvas.getContext("2d")
+        ,   ctx = canvas.getContext("2d")
+
+const globalPolygons = []
+        ,   globalBots = []
+        ,   player = null
+
 
 function darkenRGB(rgb, darken) {
     if (typeof rgb !== "string") {
@@ -79,11 +84,7 @@ class Polygon {
         this.y += this.velY*Math.sin(this.angle)
     }
 }
-let polys = []
-for (let i = 0; i < 20; i++) {
-    let poly = new Polygon(canvas.width/2,canvas.height/2, 3+Math.floor(Math.random()*8))
-    polys.push(poly)
-}
+
 setInterval(() => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     polys.forEach((poly) => {
