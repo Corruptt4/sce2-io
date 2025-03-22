@@ -1,4 +1,4 @@
-class Spawner {
+export class Spawner {
     constructor(currentPolys, maxPoly, mapSize, maxSides) {
         this.currentPolys = currentPolys
         this.maxPoly = maxPoly

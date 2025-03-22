@@ -5,6 +5,7 @@ const globalPolygons = []
         ,   globalBots = []
         ,   player = null
 
+import { Spawner } from "./spawner.js"
 
 function darkenRGB(rgb, darken) {
     if (typeof rgb !== "string") {
@@ -87,12 +88,12 @@ class Polygon {
 
 setInterval(() => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    polys.forEach((poly) => {
+    globalPolygons.forEach((poly) => {
         poly.draw()
         poly.move()
 
-        for (let i = 0; i < polys.length; i++) {
-            let poly2 = polys[i]
+        for (let i = 0; i < globalPolygons.length; i++) {
+            let poly2 = globalPolygons[i]
             if (poly2 != poly) {
                 let dist = Math.sqrt(Math.pow(poly.x - poly2.x, 2) + Math.pow(poly.y - poly2.y, 2))
                 if (dist < (poly.size+poly2.size)) {
