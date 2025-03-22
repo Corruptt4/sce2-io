@@ -7,31 +7,6 @@ export const globalPolygons = []
 
 import { Spawner } from "./spawner.js"
 
-function hslToRgb(h, s, l) {
-    s /= 100;
-    l /= 100;
-
-    let c = (1 - Math.abs(2 * l - 1)) * s;
-    let x = c * (1 - Math.abs((h / 60) % 2 - 1));
-    let m = l - c / 2;
-
-    let r, g, b;
-    if (h >= 0 && h < 60) [r, g, b] = [c, x, 0];
-    else if (h >= 60 && h < 120) [r, g, b] = [x, c, 0];
-    else if (h >= 120 && h < 180) [r, g, b] = [0, c, x];
-    else if (h >= 180 && h < 240) [r, g, b] = [0, x, c];
-    else if (h >= 240 && h < 300) [r, g, b] = [x, 0, c];
-    else [r, g, b] = [c, 0, x];
-
-    return [
-        Math.round((r + m) * 255),
-        Math.round((g + m) * 255),
-        Math.round((b + m) * 255)
-    ];
-}
-
-// Example Usage
-console.log(hslToRgb(200, 100, 50)); // Output: [0, 170, 255]
 
 function darkenRGB(rgb, darken) {
     if (typeof rgb !== "string") {
@@ -40,7 +15,7 @@ function darkenRGB(rgb, darken) {
     }
 
     let match = rgb.match(/\d+/g)
-    if (!match || match.length < 3) return rgb; // Ensure valid RGB format
+    if (!match || match.length < 3) return rgb; 
     
     let r = Math.max(0, parseInt(match[0], 10) - darken);
     let g = Math.max(0, parseInt(match[1], 10) - darken);
@@ -48,8 +23,8 @@ function darkenRGB(rgb, darken) {
 
     return `rgb(${r}, ${g}, ${b})`;
 }
-canvas.width = 5000
-canvas.height = 5000
+canvas.width = 7500
+canvas.height = 7500
 
 export var polygonColors = [
     "rgb(255, 228, 107)",
@@ -70,26 +45,25 @@ export class Polygon {
     constructor(x, y, sides) {
         this.x = x;
         this.angle = 0
-        this.radiant = 2
-        this.hslVal = 0
+        this.radiant = 0
+        this.r = 255;
+        this.g = 0;
+        this.b = 0;
+        this.misshapen = Math.random() < 0.1
         this.y = y;
         this.pushX = 0
         this.pushY = 0
-        this.velX = 0.4 / Math.pow(1.6, (sides-3))
-        this.velY = 0.4 / Math.pow(1.6, (sides-3))
+        this.velX = 0.75 / Math.pow(1.6, (sides-3))
+        this.velY = 0.75 / Math.pow(1.6, (sides-3))
         this.size = 10 * Math.pow(1.55, (sides-3))
-        this.sides = sides;
+        this.sides = this.misshapen ? (sides == 3) ? 3 + 1 + Math.ceil(Math.random() * 10) : sides -1+(Math.ceil(Math.random()*6)) : sides;
         let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
         this.color = polygonColors[index];
+        this.radiantMode = 0
         this.border = darkenRGB(this.color, 20);
     }
+    radiantB() {}
     draw() {
-        if (this.radiant) {
-            this.hslVal++
-            if (this.hslVal >= 360) {
-                this.hslVal = 0
-            }
-        }
         ctx.save()
         ctx.beginPath()
         ctx.translate(this.x, this.y)
@@ -101,9 +75,9 @@ export class Polygon {
                 this.size * Math.sin((i * 2 * Math.PI) / this.sides),
             );
         }
-        ctx.fillStyle = this.radiant ? `hsl(${this.hslVal}, 100%, 50%)` : this.color
+        ctx.fillStyle = this.color
         ctx.lineWidth = 3
-        ctx.strokeStyle = this.radiant ? darkenRGB(hslToRgb(this.hslVal, 100, 50), 15) : this.border
+        ctx.strokeStyle = this.radiant ? darkenRGB(updateColor(this.r, this.g, this.b, 3, 0), 15) : this.border
         ctx.fill()
         ctx.stroke()
         ctx.closePath()
@@ -119,7 +93,7 @@ export class Polygon {
         this.y += this.velY*Math.sin(this.angle)
     }
 }
-let sp = new Spawner(0, 150, 9, Polygon, globalPolygons, canvas)
+let sp = new Spawner(0, 500, 8, Polygon, globalPolygons, canvas)
 
 setInterval(()=>{
     sp.spawnLoop()
@@ -145,11 +119,17 @@ setInterval(() => {
     })
 },1000/15)
 setInterval(() => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
     globalPolygons.forEach((poly) => {
-        poly.draw()
         poly.move()
         poly.pushX *= 0.93
         poly.pushY *= 0.93
     })
 },1000/60)
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    globalPolygons.forEach((poly) => {
+        poly.draw()
+    })
+    requestAnimationFrame(render)
+}
+render()
