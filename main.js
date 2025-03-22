@@ -1,7 +1,7 @@
-const canvas = document.getElementById("c")
+export const canvas = document.getElementById("c")
         ,   ctx = canvas.getContext("2d")
 
-const globalPolygons = []
+export const globalPolygons = []
         ,   globalBots = []
         ,   player = null
 
@@ -25,7 +25,7 @@ function darkenRGB(rgb, darken) {
 canvas.width = 5000
 canvas.height = 5000
 
-var polygonColors = [
+export var polygonColors = [
     "rgb(255, 228, 107)",
     "rgb(252, 118, 118)",
     "rgb(118, 140, 252)",
@@ -40,7 +40,7 @@ var polygonColors = [
     "rgb(0, 0, 0)"
 ];
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
-class Polygon {
+export class Polygon {
     constructor(x, y, sides) {
         this.x = x;
         this.angle = 0
