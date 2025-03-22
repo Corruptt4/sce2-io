@@ -23,6 +23,12 @@ function darkenRGB(rgb, darken) {
 
     return `rgb(${r}, ${g}, ${b})`;
 }
+const camera = {
+    x: 0,
+    y: 0,
+    width: window.innerWidth,
+    height: windoow.innerHeight
+}
 canvas.width = 7500
 canvas.height = 7500
 
@@ -49,6 +55,8 @@ export class Polygon {
         this.r = 255;
         this.g = 0;
         this.b = 0;
+        this.health = 35 * Math.pow(3.6, sides)
+        this.maxHealth = 35 * Math.pow(3.6, sides)
         this.xp = 2*(Math.pow(5,sides))
         this.misshapen = Math.random() < 0.1
         this.y = y;
@@ -67,7 +75,7 @@ export class Polygon {
     draw() {
         ctx.save()
         ctx.beginPath()
-        ctx.translate(this.x, this.y)
+        ctx.translate(this.x-camera.x, this.y-camera.y)
         ctx.rotate(this.angle)
         ctx.moveTo(this.size * Math.cos(0), this.size * Math.sin(0))
         for (let i = 0; i < this.sides+1.2; i++) {
@@ -83,6 +91,22 @@ export class Polygon {
         ctx.stroke()
         ctx.closePath()
         ctx.restore()
+
+        ctx.beginPath()
+        ctx.fillStyle = darkenRGB(this.color, 15);
+        ctx.lineWidth = 3
+        ctx.strokeStyle = darkenRGB(this.color, 15)
+        ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+10 - camera.y, this.size*2, 5, 5)
+        ctx.fill()
+        ctx.stroke()        
+        ctx.closePath()
+
+        ctx.beginPath()
+        ctx.fillStyle = this.color
+        ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+10 - camera.y, (this.size*2)*(this.health / this.maxHealth), 5, 5)
+        ctx.fill()
+        ctx.closePath()
+        this.health -= this.maxHealth/500
     }
     move() {
         this.angle += 0.05/this.size
@@ -94,7 +118,7 @@ export class Polygon {
         this.y += this.velY*Math.sin(this.angle)
     }
 }
-let sp = new Spawner(0, 500, 10, Polygon, globalPolygons, canvas)
+let sp = new Spawner(0, 500, 8, Polygon, globalPolygons, canvas)
 
 setInterval(()=>{
     sp.spawnLoop()
@@ -116,6 +140,11 @@ setInterval(() => {
                     poly2.pushY -= (3 * Math.sin(angle))/poly2.size
                 }
             }
+        }
+
+        if (poly.health <= 0) {
+            globalPolygons.splice(globalPolygons.indexOf(poly), 1)
+            sp.currentPolys--
         }
     })
 },1000/15)

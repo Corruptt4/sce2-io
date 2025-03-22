@@ -17,15 +17,22 @@ export class Spawner {
     }
 
     spawnLoop() {
-        if (this.currentPolys < this.maxPoly) {
+        if (this.currentPolys < this.maxPoly && chosenSides < 9) {
+            let chosenSides = 2 + Math.ceil(Math.random() * (this.maxSides - 2))
             let randX = Math.random() * this.canvas.width
             let randY = Math.random() * this.canvas.height
-           for (let i = 0; i < 1 + Math.ceil(Math.random()*15); i++) {
+           for (let i = 0; i < 1 + Math.ceil(Math.random()*20); i++) {
                 this.spawn(
-                    2 + Math.ceil(Math.random() * (this.maxSides - 2)),
+                    chosenSides,
                     randX,
                     randY
                 );
+           }
+           if (Math.random() < 0.1 && this.maxSides >= 11) {
+                let chosenSides = 11 + Math.ceil(Math.random() * (this.maxSides - 11))
+                let x = Math.random() * 600 + (this.canvas.width / 2 - 300)
+                let y = Math.random() * 600 + (this.canvas.width / 2 - 300)
+                this.spawn(chosenSides, x, y)
            }
         }
     }
