@@ -17,7 +17,7 @@ export class Spawner {
     }
 
     spawnLoop() {
-        if (this.currentPolys < this.maxPoly && chosenSides < 9) {
+        if (this.currentPolys < this.maxPoly && this.maxSides < 9) {
             let chosenSides = 2 + Math.ceil(Math.random() * (this.maxSides - 2))
             let randX = Math.random() * this.canvas.width
             let randY = Math.random() * this.canvas.height

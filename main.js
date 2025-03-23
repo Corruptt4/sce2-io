@@ -6,7 +6,12 @@ export const globalPolygons = []
         ,   player = null
 
 import { Spawner } from "./spawner.js"
-
+export const camera = {
+    x: 0,
+    y: 0,
+    width: window.innerWidth,
+    height: window.innerHeight
+}
 
 function darkenRGB(rgb, darken) {
     if (typeof rgb !== "string") {
@@ -23,14 +28,10 @@ function darkenRGB(rgb, darken) {
 
     return `rgb(${r}, ${g}, ${b})`;
 }
-const camera = {
-    x: 0,
-    y: 0,
-    width: window.innerWidth,
-    height: windoow.innerHeight
-}
 canvas.width = 7500
 canvas.height = 7500
+
+import { updateCamera } from "./miscellaneous.js"
 
 export var polygonColors = [
     "rgb(255, 228, 107)",
@@ -47,7 +48,7 @@ export var polygonColors = [
     "rgb(0, 0, 0)"
 ];
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
-export class Polygon {
+class Polygon {
     constructor(x, y, sides) {
         this.x = x;
         this.angle = 0
@@ -57,8 +58,8 @@ export class Polygon {
         this.b = 0;
         this.health = 35 * Math.pow(3.6, sides)
         this.maxHealth = 35 * Math.pow(3.6, sides)
-        this.xp = 2*(Math.pow(5,sides))
-        this.misshapen = Math.random() < 0.1
+        this.xp = 2*(Math.pow(5,sides)) * (this.misshapen ? 10 : 1)
+        this.misshapen = Math.random() < 0.01
         this.y = y;
         this.pushX = 0
         this.pushY = 0
@@ -71,7 +72,9 @@ export class Polygon {
         this.radiantMode = 0
         this.border = darkenRGB(this.color, 20);
     }
-    radiantB() {}
+    radiantB() {
+        // to do: radiant
+    }
     draw() {
         ctx.save()
         ctx.beginPath()
@@ -154,6 +157,23 @@ function checkXPs() {
     }
 }
 
+function makeGrid(cellSize) {
+    ctx.beginPath()
+    for (let i = 10; i < canvas.width; i += cellSize) {
+        ctx.moveTo(i, 0)
+        ctx.lineTo(i, canvas.height)
+    }
+    
+    for (let i = 10; i < canvas.height; i += cellSize) {
+        ctx.moveTo(0-camera.x, i-camera.y)
+        ctx.lineTo(canvas.width-camera.x, i-camera.y)
+    }
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.1)"
+    ctx.lineWidth = 1
+    ctx.stroke()
+    ctx.closePath()
+}
+
 checkXPs()
 setInterval(() => {
     globalPolygons.forEach((poly) => {
@@ -164,6 +184,8 @@ setInterval(() => {
 },1000/60)
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+    //updateCamera()
+    makeGrid(20)
     globalPolygons.forEach((poly) => {
         poly.draw()
     })
