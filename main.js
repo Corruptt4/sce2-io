@@ -80,6 +80,7 @@ class Polygon {
         ctx.beginPath()
         ctx.translate(this.x-camera.x, this.y-camera.y)
         ctx.rotate(this.angle)
+        ctx.lineJoin = "round"
         ctx.moveTo(this.size * Math.cos(0), this.size * Math.sin(0))
         for (let i = 0; i < this.sides+1.2; i++) {
             ctx.lineTo(
