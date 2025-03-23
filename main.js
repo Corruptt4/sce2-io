@@ -3,7 +3,13 @@ export const canvas = document.getElementById("c")
 
 export const globalPolygons = []
         ,   globalBots = []
-        ,   player = null
+
+export let player = null
+,     mx = null
+,     my = null
+,     frictionFactor = 0.93
+,     shocks = []
+,     bullets = []
 
 import { Spawner } from "./spawner.js"
 export const camera = {
@@ -13,7 +19,7 @@ export const camera = {
     height: window.innerHeight
 }
 
-function darkenRGB(rgb, darken) {
+export function darkenRGB(rgb, darken) {
     if (typeof rgb !== "string") {
         console.error("Invalid input to darkenRGB:", rgb);
         return "rgb(0, 0, 0)";
@@ -48,82 +54,24 @@ export var polygonColors = [
     "rgb(0, 0, 0)"
 ];
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
-class Polygon {
-    constructor(x, y, sides) {
-        this.x = x;
-        this.angle = 0
-        this.radiant = 0
-        this.r = 255;
-        this.g = 0;
-        this.b = 0;
-        this.health = 35 * Math.pow(3.6, sides)
-        this.maxHealth = 35 * Math.pow(3.6, sides)
-        this.xp = 2*(Math.pow(5,sides)) * (this.misshapen ? 10 : 1)
-        this.misshapen = Math.random() < 0.01
-        this.y = y;
-        this.pushX = 0
-        this.pushY = 0
-        this.velX = 0.75 / Math.pow(1.6, (sides-3))
-        this.velY = 0.75 / Math.pow(1.6, (sides-3))
-        this.size = 10 * Math.pow(1.55, (sides-3))
-        this.sides = this.misshapen ? (sides == 3) ? 3 + 1 + Math.ceil(Math.random() * 10) : sides -1+(Math.ceil(Math.random()*6)) : sides;
-        let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
-        this.color = polygonColors[index];
-        this.radiantMode = 0
-        this.border = darkenRGB(this.color, 20);
-    }
-    radiantB() {
-        // to do: radiant
-    }
-    draw() {
-        ctx.save()
-        ctx.beginPath()
-        ctx.translate(this.x-camera.x, this.y-camera.y)
-        ctx.rotate(this.angle)
-        ctx.lineJoin = "round"
-        ctx.moveTo(this.size * Math.cos(0), this.size * Math.sin(0))
-        for (let i = 0; i < this.sides+1.2; i++) {
-            ctx.lineTo(
-                this.size * Math.cos((i * 2 * Math.PI) / this.sides),
-                this.size * Math.sin((i * 2 * Math.PI) / this.sides),
-            );
-        }
-        ctx.fillStyle = this.color
-        ctx.lineWidth = 3
-        ctx.strokeStyle = this.radiant ? darkenRGB(updateColor(this.r, this.g, this.b, 3, 0), 15) : this.border
-        ctx.fill()
-        ctx.stroke()
-        ctx.closePath()
-        ctx.restore()
-
-        ctx.beginPath()
-        ctx.fillStyle = darkenRGB(this.color, 15);
-        ctx.lineWidth = 3
-        ctx.strokeStyle = darkenRGB(this.color, 15)
-        ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+10 - camera.y, this.size*2, 5, 5)
-        ctx.fill()
-        ctx.stroke()        
-        ctx.closePath()
-
-        ctx.beginPath()
-        ctx.fillStyle = this.color
-        ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+10 - camera.y, (this.size*2)*(this.health / this.maxHealth), 5, 5)
-        ctx.fill()
-        ctx.closePath()
-        this.health -= this.maxHealth/500
-    }
-    move() {
-        this.angle += 0.05/this.size
-
-        this.x += this.pushX
-        this.y += this.pushY
-
-        this.x += this.velX*Math.cos(this.angle)
-        this.y += this.velY*Math.sin(this.angle)
-    }
-}
-let sp = new Spawner(0, 500, 8, Polygon, globalPolygons, canvas)
-
+import { Polygon, Shock, Player, Bullet } from "./entities.js"
+player = new Player(60, 70, 20, "rgb(0, 0, 255)", 250, 90)
+window.addEventListener("resize", (e) => {
+    camera.width = window.innerWidth
+    camera.height = window.innerHeight
+})
+window.addEventListener("mousemove", (e) => {
+    let rect = canvas.getBoundingClientRect()
+    mx = e.clientX - rect.left + camera.x
+    my = e.clientY - rect.top + camera.y
+})
+document.addEventListener("keydown", (e) => {
+    player.keys[e.keyCode] = true
+})
+document.addEventListener("keyup", (e) => {
+    player.keys[e.keyCode] = false
+})
+let sp = new Spawner(0, 250, 13, Polygon, globalPolygons, canvas, polygonColors)
 setInterval(()=>{
     sp.spawnLoop()
 },200)
@@ -137,12 +85,37 @@ setInterval(() => {
                 let dist = Math.sqrt(Math.pow(poly.x - poly2.x, 2) + Math.pow(poly.y - poly2.y, 2))
                 if (dist < (poly.size+poly2.size)) {
                     let angle = Math.atan2(poly.y - poly2.y, poly.x - poly2.x)
-                    poly.pushX += (3 * Math.cos(angle))/poly.size
-                    poly.pushY += (3 * Math.sin(angle))/poly.size
+                    poly.pushX += (2 * Math.cos(angle))/(poly.size/10)
+                    poly.pushY += (2 * Math.sin(angle))/(poly.size/10)
                     
-                    poly2.pushX -= (3 * Math.cos(angle))/poly2.size
-                    poly2.pushY -= (3 * Math.sin(angle))/poly2.size
+                    poly2.pushX -= (2 * Math.cos(angle))/(poly2.size/10)
+                    poly2.pushY -= (2 * Math.sin(angle))/(poly2.size/10)
                 }
+            }
+        }
+        bullets.forEach((bullet) => {
+            let dist = Math.sqrt(Math.pow(bullet.x - poly.x, 2) + Math.pow(bullet.y - poly.y, 2))
+            if (dist < (poly.size + bullet.size)) {
+                poly.health -= bullet.damage
+                bullets.splice(bullets.indexOf(bullet), 1)
+            }
+        })
+
+        if (player) {
+            let dx = player.x - poly.x
+            let dy = player.y - poly.y
+            let dx2 = dx*dx
+            let dy2 = dy*dy
+            if (Math.sqrt(dx2+dy2) < (poly.size + player.size)) {
+                let angle = Math.atan2(poly.y - player.y, poly.x - player.x)
+                poly.pushX += (2 * Math.cos(angle))/(poly.size/10)
+                poly.pushY += (2 * Math.sin(angle))/(poly.size/10)
+                
+                player.velX -= (2 * Math.cos(angle))/(player.size/10)
+                player.velY -= (2 * Math.sin(angle))/(player.size/10)
+
+                player.health -= poly.damage
+                poly.health -= player.bodyDamage
             }
         }
 
@@ -151,18 +124,13 @@ setInterval(() => {
             sp.currentPolys--
         }
     })
-},1000/15)
-function checkXPs() {
-    for (let i = 3; i <= 10; i++) {
-        console.log(2*(Math.pow(5,i)))
-    }
-}
+},1000/30)
 
-function makeGrid(cellSize) {
+function makeGrid(cellSize, camera) {
     ctx.beginPath()
     for (let i = 10; i < canvas.width; i += cellSize) {
-        ctx.moveTo(i, 0)
-        ctx.lineTo(i, canvas.height)
+        ctx.moveTo(i-camera.x, 0-camera.y)
+        ctx.lineTo(i-camera.x, canvas.height-camera.y)
     }
     
     for (let i = 10; i < canvas.height; i += cellSize) {
@@ -175,21 +143,42 @@ function makeGrid(cellSize) {
     ctx.closePath()
 }
 
-checkXPs()
 setInterval(() => {
     globalPolygons.forEach((poly) => {
         poly.move()
-        poly.pushX *= 0.93
-        poly.pushY *= 0.93
+        poly.pushX *= frictionFactor
+        poly.pushY *= frictionFactor
     })
+    shocks.forEach((shock) => {
+        shock.upd()
+    })
+    bullets.forEach((bul) => {
+        bul.move()
+        bul.desp()
+    })
+    if (player.keys[32]){
+        player.shoot()
+    }
+    player.move()
+    player.reload()
+    player.velX *= frictionFactor
+    player.velY *= frictionFactor
 },1000/60)
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    //updateCamera()
-    makeGrid(20)
+    updateCamera(player)
+    makeGrid(20, camera)
     globalPolygons.forEach((poly) => {
         poly.draw()
     })
+    shocks.forEach((shock) => {
+        shock.draw()
+    })
+    bullets.forEach((bul) => {
+        bul.draw()
+    })
+    player.draw()
+    player.faceMouse()
     requestAnimationFrame(render)
 }
 render()
