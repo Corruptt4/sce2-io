@@ -93,6 +93,7 @@ setInterval(() => {
                 }
             }
         }
+
         bullets.forEach((bullet) => {
             let dist = Math.sqrt(Math.pow(bullet.x - poly.x, 2) + Math.pow(bullet.y - poly.y, 2))
             if (dist < (poly.size + bullet.size)) {
