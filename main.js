@@ -77,6 +77,23 @@ setInterval(()=>{
 },200)
 
 setInterval(() => {
+    for (let i = 0; i < globalPolygons.length; i++) {
+        let poly2 = globalPolygons[i]
+        for (let k = 0; k < globalPolygons.length; k++) {
+            let poly = globalPolygons[k]
+            if (poly2 != poly) {
+                let dist = Math.sqrt(Math.pow(poly.x - poly2.x, 2) + Math.pow(poly.y - poly2.y, 2))
+                if (dist < (poly.size+poly2.size)) {
+                    let angle = Math.atan2(poly.y - poly2.y, poly.x - poly2.x)
+                    poly.pushX += (10 * Math.cos(angle))/(poly.size/10)
+                    poly.pushY += (10 * Math.sin(angle))/(poly.size/10)
+                    
+                    poly2.pushX -= (10 * Math.cos(angle))/(poly2.size/10)
+                    poly2.pushY -= (10 * Math.sin(angle))/(poly2.size/10)
+                }
+            }
+        }
+    }
     bullets.forEach((bul) => {
         if (bul.isBomb) {
             bul.velX *= frictionFactor
@@ -115,21 +132,6 @@ setInterval(() => {
         }
     })
     globalPolygons.forEach((poly) => {
-        for (let i = 0; i < globalPolygons.length; i++) {
-            let poly2 = globalPolygons[i]
-            if (poly2 != poly) {
-                let dist = Math.sqrt(Math.pow(poly.x - poly2.x, 2) + Math.pow(poly.y - poly2.y, 2))
-                if (dist < (poly.size+poly2.size)) {
-                    let angle = Math.atan2(poly.y - poly2.y, poly.x - poly2.x)
-                    poly.pushX += (4 * Math.cos(angle))/(poly.size/10)
-                    poly.pushY += (4 * Math.sin(angle))/(poly.size/10)
-                    
-                    poly2.pushX -= (4 * Math.cos(angle))/(poly2.size/10)
-                    poly2.pushY -= (4 * Math.sin(angle))/(poly2.size/10)
-                }
-            }
-        }
-
         if (poly.health <= 0) {
             globalPolygons.splice(globalPolygons.indexOf(poly), 1)
             sp.currentPolys--
