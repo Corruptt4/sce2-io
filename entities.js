@@ -1,4 +1,4 @@
-import {darkenRGB, ctx, camera, mx, my, bullets} from "./main.js"
+import {darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks} from "./main.js"
 
 export class Polygon {
     constructor(x, y, sides, polygonColors) {
@@ -92,9 +92,9 @@ export class Shock {
     }
     upd() {
         if (this.alpha > 0) {
-            this.alpha -= 0.005
+            this.alpha -= 0.05
         }
-        this.size += (this.maxSize-this.size)*0.03
+        this.size += (this.maxSize-this.size)*0.04
     }
 }
 export class Bullet {
@@ -103,23 +103,39 @@ export class Bullet {
         this.y = y;
         this.velX = velX;
         this.velY = velY;
+        this.size = host.size/2
         this.host = host;
         this.despawnTick = 155
         this.damage = damage
+        this.isBomb = true
     }
     draw() {
         ctx.beginPath()
         ctx.fillStyle = this.host.color
         ctx.strokeStyle = this.host.border
         ctx.lineWidth = 3
-        ctx.arc(this.x-camera.x, this.y-camera.y, this.host.size/2, 0, Math.PI*2)
+        ctx.arc(this.x-camera.x, this.y-camera.y, this.size, 0, Math.PI*2)
         ctx.fill()
         ctx.stroke()
         ctx.closePath()
     }
+    explode() {
+        let maxSize = this.size*50
+        let shock = new Shock(this.x, this.y, 0, maxSize)
+        globalPolygons.forEach((pol) => {
+            let dist = Math.sqrt(Math.pow(pol.x - this.x, 2) + Math.pow(pol.y - this.y, 2))
+            if (dist < maxSize) {
+                pol.health -= this.damage*15
+            }
+        })
+        shocks.push(shock)
+    }
     desp() {
         this.despawnTick--
         if (this.despawnTick <= 0) {
+            if (this.isBomb) {
+                this.explode()
+            }
             bullets.splice(bullets.indexOf(this), 1)
         }
     }

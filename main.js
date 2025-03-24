@@ -77,31 +77,25 @@ setInterval(()=>{
 },200)
 
 setInterval(() => {
-    globalPolygons.forEach((poly) => {
-
-        for (let i = 0; i < globalPolygons.length; i++) {
-            let poly2 = globalPolygons[i]
-            if (poly2 != poly) {
-                let dist = Math.sqrt(Math.pow(poly.x - poly2.x, 2) + Math.pow(poly.y - poly2.y, 2))
-                if (dist < (poly.size+poly2.size)) {
-                    let angle = Math.atan2(poly.y - poly2.y, poly.x - poly2.x)
-                    poly.pushX += (2 * Math.cos(angle))/(poly.size/10)
-                    poly.pushY += (2 * Math.sin(angle))/(poly.size/10)
-                    
-                    poly2.pushX -= (2 * Math.cos(angle))/(poly2.size/10)
-                    poly2.pushY -= (2 * Math.sin(angle))/(poly2.size/10)
-                }
-            }
+    bullets.forEach((bul) => {
+        if (bul.isBomb) {
+            bul.velX *= frictionFactor
+            bul.velY *= frictionFactor
         }
-
+    })
+    globalPolygons.forEach((poly) => {
         bullets.forEach((bullet) => {
-            let dist = Math.sqrt(Math.pow(bullet.x - poly.x, 2) + Math.pow(bullet.y - poly.y, 2))
+            let dist = Math.sqrt(Math.pow(poly.x - bullet.x, 2) + Math.pow(poly.y - bullet.y, 2))
             if (dist < (poly.size + bullet.size)) {
                 poly.health -= bullet.damage
+                if (bullet.isBomb) {
+                    bullet.explode()
+                }
                 bullets.splice(bullets.indexOf(bullet), 1)
             }
         })
-
+    })
+    globalPolygons.forEach((poly) => {
         if (player) {
             let dx = player.x - poly.x
             let dy = player.y - poly.y
@@ -109,14 +103,30 @@ setInterval(() => {
             let dy2 = dy*dy
             if (Math.sqrt(dx2+dy2) < (poly.size + player.size)) {
                 let angle = Math.atan2(poly.y - player.y, poly.x - player.x)
-                poly.pushX += (2 * Math.cos(angle))/(poly.size/10)
-                poly.pushY += (2 * Math.sin(angle))/(poly.size/10)
+                poly.pushX += (4 * Math.cos(angle))/(poly.size/10)
+                poly.pushY += (4 * Math.sin(angle))/(poly.size/10)
                 
-                player.velX -= (2 * Math.cos(angle))/(player.size/10)
-                player.velY -= (2 * Math.sin(angle))/(player.size/10)
+                player.velX -= (4 * Math.cos(angle))/(player.size/10)
+                player.velY -= (4 * Math.sin(angle))/(player.size/10)
 
                 player.health -= poly.damage
                 poly.health -= player.bodyDamage
+            }
+        }
+    })
+    globalPolygons.forEach((poly) => {
+        for (let i = 0; i < globalPolygons.length; i++) {
+            let poly2 = globalPolygons[i]
+            if (poly2 != poly) {
+                let dist = Math.sqrt(Math.pow(poly.x - poly2.x, 2) + Math.pow(poly.y - poly2.y, 2))
+                if (dist < (poly.size+poly2.size)) {
+                    let angle = Math.atan2(poly.y - poly2.y, poly.x - poly2.x)
+                    poly.pushX += (4 * Math.cos(angle))/(poly.size/10)
+                    poly.pushY += (4 * Math.sin(angle))/(poly.size/10)
+                    
+                    poly2.pushX -= (4 * Math.cos(angle))/(poly2.size/10)
+                    poly2.pushY -= (4 * Math.sin(angle))/(poly2.size/10)
+                }
             }
         }
 
@@ -125,7 +135,7 @@ setInterval(() => {
             sp.currentPolys--
         }
     })
-},1000/30)
+},1000/5)
 
 function makeGrid(cellSize, camera) {
     ctx.beginPath()
