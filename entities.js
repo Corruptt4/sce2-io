@@ -1,4 +1,4 @@
-import {darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks} from "./main.js"
+import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber } from "./main.js"
 
 export class Polygon {
     constructor(x, y, sides, polygonColors) {
@@ -49,20 +49,23 @@ export class Polygon {
         ctx.closePath()
         ctx.restore()
 
-        ctx.beginPath()
-        ctx.fillStyle = darkenRGB(this.color, 15);
-        ctx.lineWidth = 6
-        ctx.strokeStyle = darkenRGB(this.color, 15)
-        ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+5 - camera.y, this.size*2, 3, 3)
-        ctx.fill()
-        ctx.stroke()        
-        ctx.closePath()
+        
+        if ((this.health/this.maxHealth) < 1) {
+            ctx.beginPath()
+            ctx.fillStyle = darkenRGB(this.color, 15);
+            ctx.lineWidth = 6
+            ctx.strokeStyle = darkenRGB(this.color, 15)
+            ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, this.size*2, 3, 3)
+            ctx.fill()
+            ctx.stroke()        
+            ctx.closePath()
 
-        ctx.beginPath()
-        ctx.fillStyle = this.color
-        ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+5 - camera.y, (this.size*2)*(this.health / this.maxHealth), 3,3)
-        ctx.fill()
-        ctx.closePath()
+            ctx.beginPath()
+            ctx.fillStyle = this.color
+            ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, (this.size*2)*(this.health / this.maxHealth), 3,3)
+            ctx.fill()
+            ctx.closePath()
+        }
     }
     move() {
         this.angle += 0.05/this.size
@@ -105,6 +108,7 @@ export class Bullet {
         this.velY = velY;
         this.size = host.size/2
         this.host = host;
+        this.health = 10e3
         this.despawnTick = 155
         this.damage = damage
         this.isBomb = true
@@ -125,7 +129,7 @@ export class Bullet {
         globalPolygons.forEach((pol) => {
             let dist = Math.sqrt(Math.pow(pol.x - this.x, 2) + Math.pow(pol.y - this.y, 2))
             if (dist < maxSize) {
-                pol.health -= this.damage*15
+                pol.health -= this.damage*3
             }
         })
         shocks.push(shock)
@@ -154,6 +158,10 @@ export class Player {
         this.health = health;
         this.velX = 0
         this.velY = 0
+        this.xp = 0
+        this.holdMouse = false
+        this.xpToNext = 100
+        this.level = 1
         this.abilityMaxRadius = 90
         this.speed = 0.8 / (this.size/10)
         this.maxHealth = health;
@@ -168,10 +176,21 @@ export class Player {
             this.reloadTick++
         }
     }
+    levelUpCheck() {
+        if (this.xp >= this.xpToNext) {
+            this.level++
+            this.xp -= this.xpToNext
+            this.xpToNext *= 1.2
+            this.size *= 1.01
+            this.maxHealth *= 1.31
+            this.health *= 1.31
+            this.bodyDamage *= 1.31
+        }
+    }
     shoot() {
         if (this.reloadTick >= this.reloadMaxTick) {
             this.reloadTick = 0
-            let bullet = new Bullet(this.x, this.y, 7*Math.cos(this.angle), 7*Math.sin(this.angle), this, this.bodyDamage/2)
+            let bullet = new Bullet(this.x, this.y, 14*Math.cos(this.angle), 14*Math.sin(this.angle), this, this.bodyDamage)
             bullets.push(bullet)
         }
     }
@@ -189,20 +208,34 @@ export class Player {
         ctx.closePath()
         ctx.restore()
 
+        ctx.save()
         ctx.beginPath()
-        ctx.fillStyle = darkenRGB(this.color, 15);
-        ctx.lineWidth = 6
-        ctx.strokeStyle = darkenRGB(this.color, 15)
-        ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, this.size*2, 3, 3)
-        ctx.fill()
-        ctx.stroke()        
+        ctx.translate(this.x-camera.x, this.y-camera.y)
+        ctx.font = "15px Arial"
+        ctx.textAlign = "center"
+        ctx.fillStyle = this.color;
+        ctx.strokeStyle = this.border;
+        ctx.fillText(abreviatedNumber(this.xp) + "/" + abreviatedNumber(this.xpToNext), 0, -this.size-10, 200)
+        ctx.fillText("Lv." + abreviatedNumber(this.level), 0, -this.size-25, 200)
         ctx.closePath()
+        ctx.restore()
 
-        ctx.beginPath()
-        ctx.fillStyle = this.color
-        ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, (this.size*2)*(this.health / this.maxHealth), 3,3)
-        ctx.fill()
-        ctx.closePath()
+        if ((this.health/this.maxHealth) < 1) {
+            ctx.beginPath()
+            ctx.fillStyle = darkenRGB(this.color, 15);
+            ctx.lineWidth = 6
+            ctx.strokeStyle = darkenRGB(this.color, 15)
+            ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, this.size*2, 3, 3)
+            ctx.fill()
+            ctx.stroke()        
+            ctx.closePath()
+
+            ctx.beginPath()
+            ctx.fillStyle = this.color
+            ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, (this.size*2)*(this.health / this.maxHealth), 3,3)
+            ctx.fill()
+            ctx.closePath()
+        }
     }
     faceMouse() {
         if (mx != null && my != null) {

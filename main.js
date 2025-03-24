@@ -18,7 +18,46 @@ export const camera = {
     width: window.innerWidth,
     height: window.innerHeight
 }
-
+export function abreviatedNumber(num) {
+    if (num < 1e3) return num.toFixed(0)
+    let abreviations = [
+        "K",
+        "M",
+        "B",
+        "T",
+        "Qa",
+        "Qi",
+        "Sx",
+        "Sp",
+        "Oc",
+        "No",
+        "Dc",
+        "UDc",
+        "DDc",
+        "TDc",
+        "QaDc",
+        "QiDc",
+        "SxDc",
+        "SpDc",
+        "OcDc",
+        "NoDc",
+        "Vg",
+        "UVg",
+        "DVg",
+        "TVg",
+        "QaVg",
+        "QiVg",
+        "SxVg",
+        "SpVg",
+        "OcVg",
+        "NoVg",
+        "Tg"
+    ]
+    let index = Math.floor(Math.log10(num) / 3) - 1
+    
+    let shortNum = (num / Math.pow(10, (index+1)*3)).toFixed(2)
+    return shortNum + abreviations[index]
+}
 export function darkenRGB(rgb, darken) {
     if (typeof rgb !== "string") {
         console.error("Invalid input to darkenRGB:", rgb);
@@ -55,7 +94,7 @@ export var polygonColors = [
 ];
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
 import { Polygon, Shock, Player, Bullet } from "./entities.js"
-player = new Player(60, 70, 20, "rgb(0, 0, 255)", 250, 90)
+player = new Player(60, 70, 20, "rgb(0, 0, 255)", 250, 150)
 window.addEventListener("resize", (e) => {
     camera.width = window.innerWidth
     camera.height = window.innerHeight
@@ -71,11 +110,58 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("keyup", (e) => {
     player.keys[e.keyCode] = false
 })
-let sp = new Spawner(0, 250, 13, Polygon, globalPolygons, canvas, polygonColors)
+document.addEventListener("mousedown", (e) => {
+    if (e.button == 0) {
+        player.holdMouse = true
+    }
+})
+document.addEventListener("mouseup", (e) => {
+    if (e.button == 0) {
+        player.holdMouse = false
+    }
+})
+let sp = new Spawner(0, 250, 15, Polygon, globalPolygons, canvas, polygonColors)
 setInterval(()=>{
     sp.spawnLoop()
 },200)
-
+setInterval(() => {
+    globalPolygons.forEach((poly) => {
+        poly.move()
+        poly.pushX *= frictionFactor
+        poly.pushY *= frictionFactor
+        if (poly.health <= 0) {
+            player.xp += poly.xp
+            globalPolygons.splice(globalPolygons.indexOf(poly), 1)
+            sp.currentPolys--
+        }
+    })
+    shocks.forEach((shock) => {
+        shock.upd()
+    })
+    bullets.forEach((bul) => {
+        bul.move()
+        bul.desp()
+        
+        if (bul.isBomb) {
+            bul.velX *= frictionFactor
+            bul.velY *= frictionFactor
+        }
+        if (bul.health < 0) {
+            if (bul.isBomb) {
+                bul.explode()
+            }
+            bullets.splice(bullets.indexOf(bul), 1)
+        }
+    })
+    if (player.keys[32] || player.holdMouse){
+        player.shoot()
+    }
+    player.move()
+    player.reload()
+    player.levelUpCheck()
+    player.velX *= frictionFactor
+    player.velY *= frictionFactor
+},1000/60)
 setInterval(() => {
     for (let i = 0; i < globalPolygons.length; i++) {
         let poly2 = globalPolygons[i]
@@ -94,21 +180,12 @@ setInterval(() => {
             }
         }
     }
-    bullets.forEach((bul) => {
-        if (bul.isBomb) {
-            bul.velX *= frictionFactor
-            bul.velY *= frictionFactor
-        }
-    })
     globalPolygons.forEach((poly) => {
         bullets.forEach((bullet) => {
             let dist = Math.sqrt(Math.pow(poly.x - bullet.x, 2) + Math.pow(poly.y - bullet.y, 2))
             if (dist < (poly.size + bullet.size)) {
                 poly.health -= bullet.damage
-                if (bullet.isBomb) {
-                    bullet.explode()
-                }
-                bullets.splice(bullets.indexOf(bullet), 1)
+                bullet.health -= poly.damage
             }
         })
     })
@@ -131,12 +208,6 @@ setInterval(() => {
             }
         }
     })
-    globalPolygons.forEach((poly) => {
-        if (poly.health <= 0) {
-            globalPolygons.splice(globalPolygons.indexOf(poly), 1)
-            sp.currentPolys--
-        }
-    })
 },1000/5)
 
 function makeGrid(cellSize, camera) {
@@ -155,28 +226,6 @@ function makeGrid(cellSize, camera) {
     ctx.stroke()
     ctx.closePath()
 }
-
-setInterval(() => {
-    globalPolygons.forEach((poly) => {
-        poly.move()
-        poly.pushX *= frictionFactor
-        poly.pushY *= frictionFactor
-    })
-    shocks.forEach((shock) => {
-        shock.upd()
-    })
-    bullets.forEach((bul) => {
-        bul.move()
-        bul.desp()
-    })
-    if (player.keys[32]){
-        player.shoot()
-    }
-    player.move()
-    player.reload()
-    player.velX *= frictionFactor
-    player.velY *= frictionFactor
-},1000/60)
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     updateCamera(player)

@@ -1,12 +1,7 @@
-import { canvas } from "./main.js"
+import { canvas, camera } from "./main.js"
 
-export const camera = {
-    x: 0,
-    y: 0,
-    width: window.innerWidth,
-    height: window.innerHeight
-}
-export function updateCamera() {
+
+export function updateCamera(player) {
     camera.x = Math.max(
         0,
         Math.min(
