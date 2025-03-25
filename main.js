@@ -128,7 +128,7 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-let sp = new Spawner(0, 380, 12, Polygon, globalPolygons, canvas, polygonColors, 20, 15)
+let sp = new Spawner(0, 380, 10, Polygon, globalPolygons, canvas, polygonColors, 20, 25)
 setInterval(()=>{
     sp.spawnLoop()
 },500)
@@ -144,6 +144,12 @@ setInterval(() => {
         }
         if (poly.radiant > 0) {
             poly.time += 0.05
+        }
+        if (poly.radiant >= 3 ) {
+            poly.luminousStar.upd()
+        }
+        if (poly.radiant >= 4 ) {
+            poly.lustrousStar.upd()
         }
     })
     shocks.forEach((shock) => {

@@ -30,24 +30,100 @@ export class RadiantParticle {
             particles.splice(particles.indexOf(this), 1)
     }
 }
+export class RadiantStar {
+    constructor(x, y, rotSpeed, points, ins, host, sizeAmp=1, isLustrous) {
+        this.x = host.x;
+        this.y = host.y;
+        this.rotSpeed = rotSpeed;
+        this.host = host;
+        this.minSize = isLustrous ? (host.minStarSize*sizeAmp)  : (-host.maxStarSize*sizeAmp)
+        this.size = host.starSize*sizeAmp
+        this.points = points
+        this.lustBehavior = isLustrous
+        this.ins = ins
+        this.ang2 = Math.PI / points
+        this.maxSpeed = host.speed
+        this.slowingDown = false
+        this.rotationupd = 0
+        this.ang = 0
+        this.mean = null
+        this.amplitude = null
+        this.maxSize = host.maxStarSize*sizeAmp
+        this.sizeAmp = sizeAmp
+    }
+    draw() {
+        this.x = this.host.x
+        this.y = this.host.y
+        ctx.save()
+        ctx.beginPath()
+        ctx.translate(this.x-camera.x, this.y-camera.y)
+        ctx.rotate(this.ang)
+        this.mean = (this.minSize+this.maxSize)/2
+        this.amplitude = (this.maxSize-this.minSize)/2
+        this.size = this.mean+this.amplitude*Math.sin(this.host.speed*this.host.time)
+        ctx.moveTo(Math.cos(0)*this.size, Math.sin(0)*this.size)
+        for (let i = 0; i < 2*this.points+1; i++) {
+            let r = (i % 2 === 0) ? this.size : this.size * this.ins
+            let angleX = Math.cos(i * this.ang2) * r;
+            let angleY = Math.sin(i * this.ang2) * r;
+            ctx.lineTo(angleX, angleY)
+        }
+        ctx.lineJoin = "round"
+        ctx.fillStyle = getRadiantColor(this.host.time)
+        ctx.strokeStyle = darkenRGB(getRadiantColor(this.host.time), 15)
+        ctx.lineWidth = 3
+        ctx.globalAlpha = 0.2
+        ctx.fill()
+        ctx.stroke()
+        ctx.globalAlpha = 1
+        ctx.closePath()
+        ctx.restore()
+    }
+    upd() {
+        if (this.lustBehavior) {
+            this.rotationupd = 0.1 * Math.sin(this.host.speed * (this.host.time/20))
+            this.ang += this.rotationupd
+        } else {
+            if (this.size < 0) {
+                this.ang -= (this.host.speed / 40) * this.sizeAmp
+            } else if (this.size > 0) {
+                this.ang += (this.host.speed / 40) * this.sizeAmp
+            }
+        }
+    }
+}
 export class Polygon {
     constructor(x, y, sides, polygonColors, rad) {
         this.x = x;
         this.angle = 0
+        this.polygonalnames = [
+            "Triangle", "Square", "Pentagon", "Hexagon", "Heptagon",
+            "Octagon", "Nonagon", "Decagon", "Hendecagon", "Dodecagon",
+            "Tridecagon", "Tetradecagon", "Pentadecagon", "Hexadecagon",
+            "Heptadecagon", "Octadecagon", "Enneadecagon", "Icosagon"
+        ]
+        this.radiantnames = ["Radiant", "Gleaming", "Luminous", "Lustruous"]
         this.radiant = rad
+        this.minAuraSize = (10.5*Math.pow(1.55, (sides-3)))
         this.maxAuraSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
+        this.minStarSize = (10.5*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
+        this.maxStarSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
+        this.starSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
         this.auraSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
         this.time = 0;
         this.health = 35 * Math.pow(3.6, sides)
         this.maxHealth = 35 * Math.pow(3.6, sides)
         this.xp = 2*(Math.pow(5,sides)) * (this.misshapen ? 10 : 1) * ((rad > 0) ? 25*Math.pow(4, rad-1) : 1)
-        this.misshapen = Math.random() < 0.01
+        this.misshapen = Math.random() < 0.5
         this.y = y;
+        this.luminousStar = new RadiantStar(x, y, 0.03, 6, 0.4, this)
+        this.lustrousStar = new RadiantStar(x, y, 0.06, 3, 0.2, this, 1.5, true)
         this.pushX = 0
         this.pushY = 0
-        this.velX = 0.75 / Math.pow(1.6, (sides-3))
-        this.velY = 0.75 / Math.pow(1.6, (sides-3))
+        this.velX = 0.95 / Math.pow(1.6, (sides-3))
+        this.velY = 0.95 / Math.pow(1.6, (sides-3))
         this.size = 10 * Math.pow(1.55, (sides-3))
+        this.actualSides = sides
         this.sides = this.misshapen ? (sides == 3) ? 3 + 1 + Math.ceil(Math.random() * 10) : sides -1+(Math.ceil(Math.random()*6)) : sides;
         let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
         this.color = polygonColors[index];
@@ -56,7 +132,7 @@ export class Polygon {
         this.border = darkenRGB(this.color, 20);
         this.mean = null
         this.amplitude = null        
-        this.speed = 0.5*Math.pow(1.5,rad)
+        this.speed = 0.125*Math.pow(1.5,rad)
     }
     radParts() {
         if (this.radiant>0) {
@@ -71,33 +147,18 @@ export class Polygon {
         }
     }
     draw() {
+        if (this.radiant >= 3) {
+            this.luminousStar.draw()
+        }
+        if (this.radiant >= 4) {
+            this.lustrousStar.draw()
+        }
         if (this.hp < 0) {
             this.hp = 0
         }
-        ctx.save()
-        ctx.beginPath()
-        ctx.translate(this.x-camera.x, this.y-camera.y)
-        ctx.rotate(this.angle)
-        ctx.lineJoin = "round"
-        ctx.moveTo(this.size * Math.cos(0), this.size * Math.sin(0))
-        for (let i = 0; i < this.sides+1.2; i++) {
-            ctx.lineTo(
-                this.size * Math.cos((i * 2 * Math.PI) / this.sides),
-                this.size * Math.sin((i * 2 * Math.PI) / this.sides),
-            );
-        }
-        
-        ctx.fillStyle = this.color
-        ctx.lineWidth = 3
-        ctx.strokeStyle = this.border
-        this.radiantB()
-        ctx.fill()
-        ctx.stroke()
-        ctx.closePath()
-        ctx.restore()
         if (this.radiant >= 2) {
-            this.mean = (this.size+this.maxAuraSize)/2
-            this.amplitude = (this.maxAuraSize-this.size)/2
+            this.mean = (this.minAuraSize+this.maxAuraSize)/2
+            this.amplitude = (this.maxAuraSize-this.minAuraSize)/2
             this.auraSize = this.mean+this.amplitude*Math.sin(this.speed*this.time)
             ctx.save()
             ctx.beginPath()
@@ -120,6 +181,40 @@ export class Polygon {
             ctx.globalAlpha = 1
             ctx.restore()
         }
+
+        ctx.beginPath()
+        let name = ((this.radiant>0) ? (((this.radiant>4) ? "Highly Radiant " + this.radiant : this.radiantnames[this.radiant-1]) + " ") : "") + (this.misshapen ? "Misshapen " : "") + ((this.actualSides-3 < 18) ? this.polygonalnames[this.actualSides-3] : this.sides + "-gon")
+        ctx.font = "16px Arial"
+        ctx.fillStyle = "white"
+        ctx.strokeStyle = "black"
+        ctx.lineWidth = 3
+        ctx.lineJoin = "round"
+        ctx.textAlign = "center"
+        ctx.strokeText(name, this.x-camera.x, this.y-this.size-camera.y)
+        ctx.fillText(name, this.x-camera.x, this.y-this.size-camera.y)
+        ctx.closePath()
+
+        ctx.save()
+        ctx.beginPath()
+        ctx.translate(this.x-camera.x, this.y-camera.y)
+        ctx.rotate(this.angle)
+        ctx.lineJoin = "round"
+        ctx.moveTo(this.size * Math.cos(0), this.size * Math.sin(0))
+        for (let i = 0; i < this.sides+1.2; i++) {
+            ctx.lineTo(
+                this.size * Math.cos((i * 2 * Math.PI) / this.sides),
+                this.size * Math.sin((i * 2 * Math.PI) / this.sides),
+            );
+        }
+        
+        ctx.fillStyle = this.color
+        ctx.lineWidth = 3
+        ctx.strokeStyle = this.border
+        this.radiantB()
+        ctx.fill()
+        ctx.stroke()
+        ctx.closePath()
+        ctx.restore()
         
         if ((this.health/this.maxHealth) < 1) {
             ctx.beginPath()
