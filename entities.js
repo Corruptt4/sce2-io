@@ -1,16 +1,46 @@
-import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber } from "./main.js"
-
+import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber, particles, getRadiantColor  } from "./main.js"
+export class RadiantParticle {
+    constructor(x, y, velX, velY, lifetime, host) {
+        this.x = x;
+        this.y = y;
+        this.velX = velX;
+        this.velY = velY;
+        this.lifetime = lifetime;
+        this.host = host
+    }
+    draw() {
+        ctx.beginPath()
+        ctx.arc(this.x-camera.x, this.y-camera.y, 5, 0, Math.PI*2)
+        ctx.fillStyle = getRadiantColor(this.host.time)
+        ctx.strokeStyle = darkenRGB(getRadiantColor(this.host.time), 15)
+        ctx.lineWidth = 3
+        ctx.globalAlpha = 0.2
+        ctx.fill()
+        ctx.stroke()
+        ctx.globalAlpha = 1
+        ctx.closePath()
+    }
+    move() {
+        this.x += this.velX;
+        this.y += this.velY;
+    }
+    desp() {
+        this.lifetime--
+        if (this.lifetime <= 0)
+            particles.splice(particles.indexOf(this), 1)
+    }
+}
 export class Polygon {
-    constructor(x, y, sides, polygonColors) {
+    constructor(x, y, sides, polygonColors, rad) {
         this.x = x;
         this.angle = 0
-        this.radiant = 0
-        this.r = 255;
-        this.g = 0;
-        this.b = 0;
+        this.radiant = rad
+        this.maxAuraSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
+        this.auraSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
+        this.time = 0;
         this.health = 35 * Math.pow(3.6, sides)
         this.maxHealth = 35 * Math.pow(3.6, sides)
-        this.xp = 2*(Math.pow(5,sides)) * (this.misshapen ? 10 : 1)
+        this.xp = 2*(Math.pow(5,sides)) * (this.misshapen ? 10 : 1) * ((rad > 0) ? 25*Math.pow(4, rad-1) : 1)
         this.misshapen = Math.random() < 0.01
         this.y = y;
         this.pushX = 0
@@ -24,11 +54,26 @@ export class Polygon {
         this.radiantMode = 0
         this.damage = 2
         this.border = darkenRGB(this.color, 20);
+        this.mean = null
+        this.amplitude = null        
+        this.speed = 0.5*Math.pow(1.5,rad)
+    }
+    radParts() {
+        if (this.radiant>0) {
+            let part = new RadiantParticle(this.x-this.size+Math.random()*(this.size*2), this.y-this.size+Math.random()*(this.size*2), 0.3*Math.cos(Math.random()*(Math.PI*2)),0.3*Math.sin(Math.random()*(Math.PI*2)), 40, this)
+            particles.push(part)
+        }
     }
     radiantB() {
-        // to do: radiant
+        if (this.radiant > 0) {
+            ctx.fillStyle = getRadiantColor(this.time)
+            ctx.strokeStyle = darkenRGB(getRadiantColor(this.time), 15)
+        }
     }
     draw() {
+        if (this.hp < 0) {
+            this.hp = 0
+        }
         ctx.save()
         ctx.beginPath()
         ctx.translate(this.x-camera.x, this.y-camera.y)
@@ -41,20 +86,47 @@ export class Polygon {
                 this.size * Math.sin((i * 2 * Math.PI) / this.sides),
             );
         }
+        
         ctx.fillStyle = this.color
         ctx.lineWidth = 3
-        ctx.strokeStyle = this.radiant ? darkenRGB(updateColor(this.r, this.g, this.b, 3, 0), 15) : this.border
+        ctx.strokeStyle = this.border
+        this.radiantB()
         ctx.fill()
         ctx.stroke()
         ctx.closePath()
         ctx.restore()
-
+        if (this.radiant >= 2) {
+            this.mean = (this.size+this.maxAuraSize)/2
+            this.amplitude = (this.maxAuraSize-this.size)/2
+            this.auraSize = this.mean+this.amplitude*Math.sin(this.speed*this.time)
+            ctx.save()
+            ctx.beginPath()
+            ctx.translate(this.x-camera.x, this.y-camera.y)
+            ctx.rotate(this.angle)
+            ctx.lineJoin = "round"
+            ctx.moveTo(this.auraSize * Math.cos(0), this.auraSize * Math.sin(0))
+            for (let i = 0; i < this.sides+1.2; i++) {
+                ctx.lineTo(
+                    this.auraSize * Math.cos((i * 2 * Math.PI) / this.sides),
+                    this.auraSize * Math.sin((i * 2 * Math.PI) / this.sides),
+                );
+            }
+            ctx.fillStyle = getRadiantColor(this.time)
+            ctx.strokeStyle = darkenRGB(getRadiantColor(this.time), 15)
+            ctx.lineWidth = 3
+            ctx.globalAlpha = 0.2
+            ctx.fill()
+            ctx.stroke()
+            ctx.globalAlpha = 1
+            ctx.restore()
+        }
         
         if ((this.health/this.maxHealth) < 1) {
             ctx.beginPath()
             ctx.fillStyle = darkenRGB(this.color, 15);
             ctx.lineWidth = 6
             ctx.strokeStyle = darkenRGB(this.color, 15)
+            this.radiantB()
             ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, this.size*2, 3, 3)
             ctx.fill()
             ctx.stroke()        
@@ -62,6 +134,7 @@ export class Polygon {
 
             ctx.beginPath()
             ctx.fillStyle = this.color
+            this.radiantB()
             ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, (this.size*2)*(this.health / this.maxHealth), 3,3)
             ctx.fill()
             ctx.closePath()
@@ -163,7 +236,7 @@ export class Player {
         this.xpToNext = 100
         this.level = 1
         this.abilityMaxRadius = 90
-        this.speed = 0.8 / (this.size/10)
+        this.speed = 0.8 / (this.size/9)
         this.maxHealth = health;
         this.bodyDamage = bodyDamage;
         this.angle = 0;
@@ -182,9 +255,9 @@ export class Player {
             this.xp -= this.xpToNext
             this.xpToNext *= 1.2
             this.size *= 1.01
-            this.maxHealth *= 1.31
-            this.health *= 1.31
-            this.bodyDamage *= 1.31
+            this.maxHealth *= 1.1
+            this.health *= 1.1
+            this.bodyDamage *= 1.1
         }
     }
     shoot() {

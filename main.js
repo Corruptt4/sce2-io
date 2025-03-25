@@ -10,6 +10,7 @@ export let player = null
 ,     frictionFactor = 0.93
 ,     shocks = []
 ,     bullets = []
+,     particles = []
 
 import { Spawner } from "./spawner.js"
 export const camera = {
@@ -17,6 +18,13 @@ export const camera = {
     y: 0,
     width: window.innerWidth,
     height: window.innerHeight
+}
+export function getRadiantColor(time) {
+    let r = Math.floor(127.5 * (Math.sin(time) + 1));
+    let g = Math.floor(127.5 * (Math.sin(time + (2 * Math.PI / 3)) + 1));
+    let b = Math.floor(127.5 * (Math.sin(time + (4 * Math.PI / 3)) + 1));
+
+    return `rgb(${r}, ${g}, ${b})`;
 }
 export function abreviatedNumber(num) {
     if (num < 1e3) return num.toFixed(0)
@@ -120,10 +128,10 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-let sp = new Spawner(0, 250, 15, Polygon, globalPolygons, canvas, polygonColors)
+let sp = new Spawner(0, 380, 12, Polygon, globalPolygons, canvas, polygonColors, 20, 15)
 setInterval(()=>{
     sp.spawnLoop()
-},200)
+},500)
 setInterval(() => {
     globalPolygons.forEach((poly) => {
         poly.move()
@@ -133,6 +141,9 @@ setInterval(() => {
             player.xp += poly.xp
             globalPolygons.splice(globalPolygons.indexOf(poly), 1)
             sp.currentPolys--
+        }
+        if (poly.radiant > 0) {
+            poly.time += 0.05
         }
     })
     shocks.forEach((shock) => {
@@ -156,6 +167,11 @@ setInterval(() => {
     if (player.keys[32] || player.holdMouse){
         player.shoot()
     }
+    
+    particles.forEach((part) => {
+        part.move()
+        part.desp()
+    })
     player.move()
     player.reload()
     player.levelUpCheck()
@@ -169,13 +185,13 @@ setInterval(() => {
             let poly = globalPolygons[k]
             if (poly2 != poly) {
                 let dist = Math.sqrt(Math.pow(poly.x - poly2.x, 2) + Math.pow(poly.y - poly2.y, 2))
-                if (dist < (poly.size+poly2.size)) {
+                if (dist.toFixed(0) < (poly.size+poly2.size)) {
                     let angle = Math.atan2(poly.y - poly2.y, poly.x - poly2.x)
-                    poly.pushX += (10 * Math.cos(angle))/(poly.size/10)
-                    poly.pushY += (10 * Math.sin(angle))/(poly.size/10)
+                    poly.pushX += (5 * Math.cos(angle))/(poly.size/5)
+                    poly.pushY += (5 * Math.sin(angle))/(poly.size/5)
                     
-                    poly2.pushX -= (10 * Math.cos(angle))/(poly2.size/10)
-                    poly2.pushY -= (10 * Math.sin(angle))/(poly2.size/10)
+                    poly2.pushX -= (5 * Math.cos(angle))/(poly2.size/5)
+                    poly2.pushY -= (5 * Math.sin(angle))/(poly2.size/5)
                 }
             }
         }
@@ -183,7 +199,7 @@ setInterval(() => {
     globalPolygons.forEach((poly) => {
         bullets.forEach((bullet) => {
             let dist = Math.sqrt(Math.pow(poly.x - bullet.x, 2) + Math.pow(poly.y - bullet.y, 2))
-            if (dist < (poly.size + bullet.size)) {
+            if (dist.toFixed(0) < (poly.size + bullet.size)) {
                 poly.health -= bullet.damage
                 bullet.health -= poly.damage
             }
@@ -195,7 +211,8 @@ setInterval(() => {
             let dy = player.y - poly.y
             let dx2 = dx*dx
             let dy2 = dy*dy
-            if (Math.sqrt(dx2+dy2) < (poly.size + player.size)) {
+            let dist = Math.sqrt(dx2+dy2)
+            if (dist.toFixed(0) < (poly.size + player.size)) {
                 let angle = Math.atan2(poly.y - player.y, poly.x - player.x)
                 poly.pushX += (4 * Math.cos(angle))/(poly.size/10)
                 poly.pushY += (4 * Math.sin(angle))/(poly.size/10)
@@ -208,7 +225,12 @@ setInterval(() => {
             }
         }
     })
-},1000/5)
+},1000/30)
+setInterval(() => {
+    globalPolygons.forEach((pol) => {
+        pol.radParts()
+    })
+}, 1000/30);
 
 function makeGrid(cellSize, camera) {
     ctx.beginPath()
@@ -238,6 +260,9 @@ function render() {
     })
     bullets.forEach((bul) => {
         bul.draw()
+    })
+    particles.forEach((part) => {
+        part.draw()
     })
     player.draw()
     player.faceMouse()
