@@ -14,8 +14,11 @@ export class Spawner {
 
     spawn(chosenSides, x, y) {
         console.log("Spawning!");
-        for (let i = 1; i <= 100; i++) {
-            this.radiants.push([["Radiant", "Gleaming", "Luminous", "Lustrous", "Highly Radiant"][(i<5) ? i : 4], 1/(this.radiantChance*Math.pow(9, i-1)), i])
+        for (let i = 0; i <= 100; i++) {
+            this.radiants.push(
+                [["Radiant", "Gleaming", "Luminous", "Lustrous", "Highly Radiant"]
+                [(i<5) ? i : 4], 1/(this.radiantChance*Math.pow(9, i-1)), i]
+            )
         }
         let chosenRad = Math.random()
         let radi = 0
@@ -31,22 +34,32 @@ export class Spawner {
     }
 
     spawnLoop() {
+        let polys = []
+        let nested = []
+        for (let i = 3; i <= 503; i++) {
+            polys.push([i, 1/Math.pow(2.23, i-3)])
+        }
+        for (let i = 11; i <= 503; i++) {
+            nested.push([i, 1/Math.pow(2.63, i-11)])
+        }
         if (this.currentPolys < this.maxPoly) {
             let randX = Math.random() * this.canvas.width
             let randY = Math.random() * this.canvas.height
            for (let i = 0; i < 1 + Math.ceil(Math.random()*this.clumpSpawn); i++) {
-                let chosenSides = 2 + Math.ceil(Math.random() * (((this.maxSides > 10) ? 10 : this.maxSides) - 2))
-                this.spawn(
-                    chosenSides,
-                    randX,
-                    randY
-                );
+                let random = Math.random()
+                polys.forEach((pol) => {
+                    if (random < pol[1]) {
+                        this.spawn(pol[0], randX, randY)
+                    }
+                })
            }
            if (Math.random() < 0.03 && this.maxSides >= 10) {
-                let chosenSides = 11 + Math.ceil(Math.random() * (this.maxSides - 11))
-                let x = Math.random() * 600 + (this.canvas.width / 2 - 300)
-                let y = Math.random() * 600 + (this.canvas.width / 2 - 300)
-                this.spawn(chosenSides, x, y)
+                let random = Math.random()
+                nested.forEach((pol) => {
+                    if (random < pol[1]) {
+                        this.spawn(pol[0], randX, randY)
+                    }
+                })
            }
         }
     }
