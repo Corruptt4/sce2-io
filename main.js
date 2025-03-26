@@ -11,7 +11,7 @@ export let player = null
 ,     shocks = []
 ,     bullets = []
 ,     particles = []
-,     mapSizeX = 1000
+,     mapSizeX = 12000
 ,     mapSizeY = mapSizeX
 ,     miniWidth = 350
 ,     miniHeight = 350
@@ -172,7 +172,7 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-//globalPolygons.push(new Polygon(280, 233, 10, polygonColors, 10))
+globalPolygons.push(new Polygon(280, 233, 10, polygonColors, 10))
 let sp = new Spawner(0, 300, 10, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 20, 3)
 setInterval(()=>{
     sp.spawnLoop()

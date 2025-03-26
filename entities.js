@@ -11,10 +11,10 @@ export class RadiantParticle {
     draw() {
         ctx.beginPath()
         ctx.arc(this.x-camera.x, this.y-camera.y, 5, 0, Math.PI*2)
-        ctx.fillStyle = getRadiantColor(this.host.time)
+        ctx.fillStyle = darkenRGB(getRadiantColor(this.host.time), -25)
         ctx.strokeStyle = darkenRGB(getRadiantColor(this.host.time), 15)
         ctx.lineWidth = 3
-        ctx.globalAlpha = 0.2
+        ctx.globalAlpha = 0.4
         ctx.fill()
         ctx.stroke()
         ctx.globalAlpha = 1
@@ -69,10 +69,10 @@ export class RadiantStar {
             ctx.lineTo(angleX, angleY)
         }
         ctx.lineJoin = "round"
-        ctx.fillStyle = getRadiantColor(this.host.time)
-        ctx.strokeStyle = darkenRGB(getRadiantColor(this.host.time), 15)
+        ctx.fillStyle = darkenRGB(getRadiantColor(this.host.time), -25)
+        ctx.strokeStyle = darkenRGB(getRadiantColor(this.host.time), 10)
         ctx.lineWidth = 3
-        ctx.globalAlpha = 0.2
+        ctx.globalAlpha = 0.6
         ctx.fill()
         ctx.stroke()
         ctx.globalAlpha = 1
@@ -192,10 +192,10 @@ export class Polygon {
                     this.auraSize * Math.sin((i * 2 * Math.PI) / this.sides),
                 );
             }
-            ctx.fillStyle = getRadiantColor(this.time)
-            ctx.strokeStyle = darkenRGB(getRadiantColor(this.time), 15)
+            ctx.fillStyle = darkenRGB(getRadiantColor(this.time), -25)
+            ctx.strokeStyle = darkenRGB(getRadiantColor(this.time), -10)
             ctx.lineWidth = 3
-            ctx.globalAlpha = 0.2
+            ctx.globalAlpha = 0.4
             ctx.fill()
             ctx.stroke()
             ctx.globalAlpha = 1
