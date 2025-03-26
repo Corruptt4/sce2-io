@@ -104,9 +104,9 @@ export class Polygon {
         ]
         this.radiantnames = ["Radiant", "Gleaming", "Luminous", "Lustruous"]
         this.radiant = rad
-        this.minAuraSize = (11*Math.pow(1.55, (sides-3)))
+        this.minAuraSize = (11.5*Math.pow(1.55, (sides-3)))
         this.maxAuraSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
-        this.minStarSize = (11*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
+        this.minStarSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
         this.maxStarSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
         this.starSize = (12*Math.pow(1.55, (sides-3)))
         this.auraSize = (12*Math.pow(1.55, (sides-3)))
@@ -353,6 +353,7 @@ export class Player {
         this.velX = 0
         this.velY = 0
         this.xp = 0
+        this.fov = 1
         this.holdMouse = false
         this.xpToNext = 100
         this.level = 1

@@ -101,8 +101,11 @@ class Minimap {
         this.entities.forEach((e) => {
             ctx.beginPath()
             ctx.globalAlpha = 0.5
-            ctx.arc(this.x+this.sideLength/2+e.x*this.scaleDown, this.y+this.sideLength/2+e.y*this.scaleDown, 2, 0, Math.PI * 2, )
+            ctx.arc(this.x+this.sideLength/2+e.x*this.scaleDown, this.y+this.sideLength/2+e.y*this.scaleDown, 1.5, 0, Math.PI * 2)
             ctx.fillStyle = e.color
+            if (e.radiant) {
+                e.radiantB()
+            }
             ctx.fill()
             ctx.globalAlpha = 1
             ctx.closePath()
@@ -169,7 +172,8 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-let sp = new Spawner(0, 500, 10, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 20, 3)
+//globalPolygons.push(new Polygon(280, 233, 10, polygonColors, 10))
+let sp = new Spawner(0, 300, 10, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 20, 3)
 setInterval(()=>{
     sp.spawnLoop()
 },500)
