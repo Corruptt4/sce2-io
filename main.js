@@ -11,8 +11,18 @@ export let player = null
 ,     shocks = []
 ,     bullets = []
 ,     particles = []
+,     mapSizeX = 1000
+,     mapSizeY = mapSizeX
+,     miniWidth = 350
+,     miniHeight = 350
 
+export let globalStuff = globalPolygons.concat(globalBots.concat(player))
+
+
+import { updateCamera } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
+import { Polygon, Shock, Player, Bullet } from "./entities.js"
+
 export const camera = {
     x: 0,
     y: 0,
@@ -66,6 +76,39 @@ export function abreviatedNumber(num) {
     let shortNum = (num / Math.pow(10, (index+1)*3)).toFixed(2)
     return shortNum + abreviations[index]
 }
+
+class Minimap {
+    constructor(x, y, width, world) {
+        this.x = x;
+        this.y = y;
+        this.sideLength = width;
+        this.scaleDown = width / world;
+        this.entities = []
+    }
+
+    draw() {
+        ctx.beginPath()
+        ctx.globalAlpha = 0.5
+        ctx.roundRect(this.x, this.y, this.sideLength*1.5, this.sideLength*1.5, 5)
+        ctx.fillStyle = "rgb(235, 235, 235)"
+        ctx.lineWidth = 4
+        ctx.strokeStyle = "rgb(0,0,0)"
+        ctx.fill()
+        ctx.stroke()
+        ctx.globalAlpha = 1
+        ctx.closePath()
+
+        this.entities.forEach((e) => {
+            ctx.beginPath()
+            ctx.globalAlpha = 0.5
+            ctx.arc(this.x+this.sideLength/2+e.x*this.scaleDown, this.y+this.sideLength/2+e.y*this.scaleDown, 2, 0, Math.PI * 2, )
+            ctx.fillStyle = e.color
+            ctx.fill()
+            ctx.globalAlpha = 1
+            ctx.closePath()
+        })
+    }
+}
 export function darkenRGB(rgb, darken) {
     if (typeof rgb !== "string") {
         console.error("Invalid input to darkenRGB:", rgb);
@@ -81,10 +124,9 @@ export function darkenRGB(rgb, darken) {
 
     return `rgb(${r}, ${g}, ${b})`;
 }
-canvas.width = 7500
-canvas.height = 7500
+canvas.width = window.innerWidth
+canvas.height = window.innerHeight
 
-import { updateCamera } from "./miscellaneous.js"
 
 export var polygonColors = [
     "rgb(255, 228, 107)",
@@ -101,7 +143,6 @@ export var polygonColors = [
     "rgb(0, 0, 0)"
 ];
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
-import { Polygon, Shock, Player, Bullet } from "./entities.js"
 player = new Player(60, 70, 20, "rgb(0, 0, 255)", 250, 150)
 window.addEventListener("resize", (e) => {
     camera.width = window.innerWidth
@@ -128,7 +169,7 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-let sp = new Spawner(0, 380, 10, Polygon, globalPolygons, canvas, polygonColors, 20, 25)
+let sp = new Spawner(0, 500, 10, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 20, 3)
 setInterval(()=>{
     sp.spawnLoop()
 },500)
@@ -145,10 +186,10 @@ setInterval(() => {
         if (poly.radiant > 0) {
             poly.time += 0.05
         }
-        if (poly.radiant >= 3 ) {
+        if (poly.radiant >= 3) {
             poly.luminousStar.upd()
         }
-        if (poly.radiant >= 4 ) {
+        if (poly.radiant >= 4) {
             poly.lustrousStar.upd()
         }
     })
@@ -210,6 +251,8 @@ setInterval(() => {
                 bullet.health -= poly.damage
             }
         })
+
+        poly.borderCheck()
     })
     globalPolygons.forEach((poly) => {
         if (player) {
@@ -231,33 +274,51 @@ setInterval(() => {
             }
         }
     })
+    player.borderCheck()
 },1000/30)
-setInterval(() => {
-    globalPolygons.forEach((pol) => {
-        pol.radParts()
-    })
-}, 1000/30);
+// setInterval(() => {
+//     globalPolygons.forEach((pol) => {
+//         pol.radParts()
+//     })
+// }, 1000/15);
 
 function makeGrid(cellSize, camera) {
+    ctx.beginPath();
+
+    for (let x = -mapSizeX*2; x <= mapSizeX*4; x += cellSize) {
+        ctx.moveTo(x - camera.x, -mapSizeY-camera.y);
+        ctx.lineTo(x - camera.x, mapSizeY*2 - camera.y);
+    }
+
+    for (let y = -mapSizeY*2; y <= mapSizeY*4; y += cellSize) {
+        ctx.moveTo(-mapSizeX-camera.x, y - camera.y);
+        ctx.lineTo(mapSizeX*2 - camera.x, y - camera.y);
+    }
+
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.closePath();
+
+    // bounds
     ctx.beginPath()
-    for (let i = 10; i < canvas.width; i += cellSize) {
-        ctx.moveTo(i-camera.x, 0-camera.y)
-        ctx.lineTo(i-camera.x, canvas.height-camera.y)
-    }
-    
-    for (let i = 10; i < canvas.height; i += cellSize) {
-        ctx.moveTo(0-camera.x, i-camera.y)
-        ctx.lineTo(canvas.width-camera.x, i-camera.y)
-    }
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.1)"
-    ctx.lineWidth = 1
-    ctx.stroke()
+    ctx.fillStyle = "rgba(185, 185, 185,0.4)"
+    ctx.fillRect(-mapSizeX*1.5-camera.x,-mapSizeY/2-camera.y, mapSizeX*3.5, -mapSizeY)
+    ctx.fillRect(-mapSizeX/2-camera.x,-mapSizeY/2-camera.y, -mapSizeX, mapSizeY*3)
+    ctx.fillRect(-mapSizeX/2-camera.x,mapSizeY-camera.y, mapSizeX*2.5, mapSizeY)
+    ctx.fillRect(mapSizeX-camera.x,-mapSizeY/2-camera.y, mapSizeX, mapSizeY+mapSizeY/2)
     ctx.closePath()
 }
+
+let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX)
 function render() {
+    globalStuff = globalPolygons.concat(globalBots.concat(player))
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     updateCamera(player)
     makeGrid(20, camera)
+    
     globalPolygons.forEach((poly) => {
         poly.draw()
     })
@@ -272,6 +333,12 @@ function render() {
     })
     player.draw()
     player.faceMouse()
+    
+    
+    mini.x = 10
+    mini.y = 10
+    mini.entities = globalStuff
+    mini.draw()
     requestAnimationFrame(render)
 }
 render()

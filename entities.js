@@ -105,19 +105,20 @@ export class Polygon {
         this.radiantnames = ["Radiant", "Gleaming", "Luminous", "Lustruous"]
         this.radiant = rad
         this.minAuraSize = (10.5*Math.pow(1.55, (sides-3)))
-        this.maxAuraSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
+        this.maxAuraSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
         this.minStarSize = (10.5*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
         this.maxStarSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
         this.starSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
-        this.auraSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
+        this.auraSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
         this.time = 0;
         this.health = 35 * Math.pow(3.6, sides)
         this.maxHealth = 35 * Math.pow(3.6, sides)
-        this.xp = 2*(Math.pow(5,sides)) * (this.misshapen ? 10 : 1) * ((rad > 0) ? 25*Math.pow(4, rad-1) : 1)
-        this.misshapen = Math.random() < 0.5
+        this.xp = 2*(Math.pow(5,sides)) * (this.misshapen ? 3 : 1) * ((rad > 0) ? 25*Math.pow(4, rad-1) : 1) * (this.miscolored ? 3 : 1)
+        this.misshapen = Math.random() < 1/65536
+        this.miscolored = Math.random() < 1/65536
         this.y = y;
-        this.luminousStar = new RadiantStar(x, y, 0.03, 6, 0.4, this)
-        this.lustrousStar = new RadiantStar(x, y, 0.06, 3, 0.2, this, 1.5, true)
+        this.luminousStar = new RadiantStar(x, y, 0.03, 6, 0.4, this, 0.8)
+        this.lustrousStar = new RadiantStar(x, y, 0.06, 3, 0.1, this, 1.5, true)
         this.pushX = 0
         this.pushY = 0
         this.velX = 0.95 / Math.pow(1.6, (sides-3))
@@ -132,7 +133,12 @@ export class Polygon {
         this.border = darkenRGB(this.color, 20);
         this.mean = null
         this.amplitude = null        
-        this.speed = 0.125*Math.pow(1.5,rad)
+        this.speed = 0.125*Math.pow(1.295,rad)
+        
+        this.ranR = Math.ceil(Math.random()*255)
+        this.ranG = Math.ceil(Math.random()*255)
+        this.ranB = Math.ceil(Math.random()*255)
+        this.randomColor = `rgb(${this.ranR}, ${this.ranG}, ${this.ranB})`
     }
     radParts() {
         if (this.radiant>0) {
@@ -183,7 +189,7 @@ export class Polygon {
         }
 
         ctx.beginPath()
-        let name = ((this.radiant>0) ? (((this.radiant>4) ? "Highly Radiant " + this.radiant : this.radiantnames[this.radiant-1]) + " ") : "") + (this.misshapen ? "Misshapen " : "") + ((this.actualSides-3 < 18) ? this.polygonalnames[this.actualSides-3] : this.sides + "-gon")
+        let name = ((this.radiant>0) ? (((this.radiant>4) ? "Highly Radiant " + this.radiant : this.radiantnames[this.radiant-1]) + " ") : "") + (this.miscolored ? "Miscolored " : "") + (this.misshapen ? "Misshapen " : "") + ((this.actualSides-3 < 18) ? this.polygonalnames[this.actualSides-3] : this.sides + "-gon")
         ctx.font = "16px Arial"
         ctx.fillStyle = "white"
         ctx.strokeStyle = "black"
@@ -206,10 +212,9 @@ export class Polygon {
                 this.size * Math.sin((i * 2 * Math.PI) / this.sides),
             );
         }
-        
-        ctx.fillStyle = this.color
+        ctx.fillStyle = this.miscolored ? this.randomColor : this.color
         ctx.lineWidth = 3
-        ctx.strokeStyle = this.border
+        ctx.strokeStyle = this.miscolored ? darkenRGB(this.randomColor, 15) : this.border
         this.radiantB()
         ctx.fill()
         ctx.stroke()
@@ -218,9 +223,9 @@ export class Polygon {
         
         if ((this.health/this.maxHealth) < 1) {
             ctx.beginPath()
-            ctx.fillStyle = darkenRGB(this.color, 15);
+            ctx.fillStyle = this.miscolored ? darkenRGB(this.randomColor, 15) : darkenRGB(this.color, 15);
             ctx.lineWidth = 6
-            ctx.strokeStyle = darkenRGB(this.color, 15)
+            ctx.strokeStyle = this.miscolored ? darkenRGB(this.randomColor, 15) : darkenRGB(this.color, 15);
             this.radiantB()
             ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, this.size*2, 3, 3)
             ctx.fill()
@@ -228,7 +233,7 @@ export class Polygon {
             ctx.closePath()
 
             ctx.beginPath()
-            ctx.fillStyle = this.color
+            ctx.fillStyle = this.miscolored ? this.randomColor : this.color
             this.radiantB()
             ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, (this.size*2)*(this.health / this.maxHealth), 3,3)
             ctx.fill()
