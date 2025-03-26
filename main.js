@@ -172,7 +172,7 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-globalPolygons.push(new Polygon(280, 233, 10, polygonColors, 10))
+//globalPolygons.push(new Polygon(280, 233, 10, polygonColors, 3))
 let sp = new Spawner(0, 300, 10, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 20, 3)
 setInterval(()=>{
     sp.spawnLoop()

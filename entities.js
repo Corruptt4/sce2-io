@@ -69,10 +69,10 @@ export class RadiantStar {
             ctx.lineTo(angleX, angleY)
         }
         ctx.lineJoin = "round"
-        ctx.fillStyle = darkenRGB(getRadiantColor(this.host.time), -25)
-        ctx.strokeStyle = darkenRGB(getRadiantColor(this.host.time), 10)
+        ctx.fillStyle = getRadiantColor(this.host.time)
+        ctx.strokeStyle = darkenRGB(getRadiantColor(this.host.time), 15)
         ctx.lineWidth = 3
-        ctx.globalAlpha = 0.6
+        ctx.globalAlpha = 1
         ctx.fill()
         ctx.stroke()
         ctx.globalAlpha = 1
@@ -118,7 +118,7 @@ export class Polygon {
         this.miscolored = Math.random() < 1/65536
         this.y = y;
         this.luminousStar = new RadiantStar(x, y, 0.03, 6, 0.4, this, 0.8)
-        this.lustrousStar = new RadiantStar(x, y, 0.06, 3, 0.1, this, 1.5, true)
+        this.lustrousStar = new RadiantStar(x, y, 0.06, 3, 0.1/(Math.pow(1.08, rad-4)), this, 1.5, true)
         this.pushX = 0
         this.pushY = 0
         this.velX = 0.95 / Math.pow(1.6, (sides-3))
@@ -133,7 +133,8 @@ export class Polygon {
         this.border = darkenRGB(this.color, 20);
         this.mean = null
         this.amplitude = null        
-        this.speed = 0.125*Math.pow(1.2 , rad)
+        this.maxSpeed = 0.125
+        this.speed = 0.125*Math.pow(1.05 , rad)
         
         this.ranR = Math.ceil(Math.random()*255)
         this.ranG = Math.ceil(Math.random()*255)
@@ -167,12 +168,6 @@ export class Polygon {
         }
     }
     draw() {
-        if (this.radiant >= 3) {
-            this.luminousStar.draw()
-        }
-        if (this.radiant >= 4) {
-            this.lustrousStar.draw()
-        }
         if (this.hp < 0) {
             this.hp = 0
         }
@@ -195,13 +190,19 @@ export class Polygon {
             ctx.fillStyle = darkenRGB(getRadiantColor(this.time), -25)
             ctx.strokeStyle = darkenRGB(getRadiantColor(this.time), -10)
             ctx.lineWidth = 3
-            ctx.globalAlpha = 0.4
+            ctx.globalAlpha = 0.8
             ctx.fill()
             ctx.stroke()
             ctx.globalAlpha = 1
             ctx.restore()
         }
 
+        if (this.radiant >= 3) {
+            this.luminousStar.draw()
+        }
+        if (this.radiant >= 4) {
+            this.lustrousStar.draw()
+        }
         
         ctx.beginPath()
         let name = ((this.radiant>0) ? (((this.radiant>4) ? "Highly Radiant " + this.radiant : this.radiantnames[this.radiant-1]) + " ") : "") + (this.miscolored ? "Miscolored " : "") + (this.misshapen ? "Misshapen " : "") + ((this.actualSides-3 < 18) ? this.polygonalnames[this.actualSides-3] : this.sides + "-gon")
