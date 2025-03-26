@@ -1,4 +1,4 @@
-import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber, particles, getRadiantColor  } from "./main.js"
+import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber, particles, getRadiantColor, mapSizeX  } from "./main.js"
 export class RadiantParticle {
     constructor(x, y, velX, velY, lifetime, host) {
         this.x = x;
@@ -85,9 +85,9 @@ export class RadiantStar {
             this.ang += this.rotationupd
         } else {
             if (this.size < 0) {
-                this.ang -= (this.host.speed / 40) * this.sizeAmp
+                this.ang -= (this.host.speed / 10) * this.sizeAmp
             } else if (this.size > 0) {
-                this.ang += (this.host.speed / 40) * this.sizeAmp
+                this.ang += (this.host.speed / 10) * this.sizeAmp
             }
         }
     }
@@ -104,12 +104,12 @@ export class Polygon {
         ]
         this.radiantnames = ["Radiant", "Gleaming", "Luminous", "Lustruous"]
         this.radiant = rad
-        this.minAuraSize = (10.5*Math.pow(1.55, (sides-3)))
-        this.maxAuraSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
-        this.minStarSize = (10.5*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
-        this.maxStarSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
-        this.starSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
-        this.auraSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.22, (rad))
+        this.minAuraSize = (11*Math.pow(1.55, (sides-3)))
+        this.maxAuraSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
+        this.minStarSize = (11*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
+        this.maxStarSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
+        this.starSize = (12*Math.pow(1.55, (sides-3)))
+        this.auraSize = (12*Math.pow(1.55, (sides-3)))
         this.time = 0;
         this.health = 35 * Math.pow(3.6, sides)
         this.maxHealth = 35 * Math.pow(3.6, sides)
@@ -133,12 +133,26 @@ export class Polygon {
         this.border = darkenRGB(this.color, 20);
         this.mean = null
         this.amplitude = null        
-        this.speed = 0.125*Math.pow(1.295,rad)
+        this.speed = 0.125*Math.pow(1.2 , rad)
         
         this.ranR = Math.ceil(Math.random()*255)
         this.ranG = Math.ceil(Math.random()*255)
         this.ranB = Math.ceil(Math.random()*255)
         this.randomColor = `rgb(${this.ranR}, ${this.ranG}, ${this.ranB})`
+    }
+    borderCheck() {
+        if (this.x > mapSizeX) {
+            this.pushX -= 2
+        }
+        if (this.x < 0-mapSizeX/2) {
+            this.pushX += 2
+        }
+        if (this.y > mapSizeX) {
+            this.pushY -= 2
+        }
+        if (this.y < 0-mapSizeX/2) {
+            this.pushY += 2
+        }
     }
     radParts() {
         if (this.radiant>0) {
@@ -188,6 +202,7 @@ export class Polygon {
             ctx.restore()
         }
 
+        
         ctx.beginPath()
         let name = ((this.radiant>0) ? (((this.radiant>4) ? "Highly Radiant " + this.radiant : this.radiantnames[this.radiant-1]) + " ") : "") + (this.miscolored ? "Miscolored " : "") + (this.misshapen ? "Misshapen " : "") + ((this.actualSides-3 < 18) ? this.polygonalnames[this.actualSides-3] : this.sides + "-gon")
         ctx.font = "16px Arial"
@@ -196,9 +211,12 @@ export class Polygon {
         ctx.lineWidth = 3
         ctx.lineJoin = "round"
         ctx.textAlign = "center"
+        ctx.globalAlpha = 0.1
         ctx.strokeText(name, this.x-camera.x, this.y-this.size-camera.y)
         ctx.fillText(name, this.x-camera.x, this.y-this.size-camera.y)
+        ctx.globalAlpha = 1
         ctx.closePath()
+
 
         ctx.save()
         ctx.beginPath()
@@ -269,6 +287,9 @@ export class Shock {
     upd() {
         if (this.alpha > 0) {
             this.alpha -= 0.05
+        }
+        if (this.alpha <= 0) {
+            shocks.splice(shocks.indexOf(this), 1)
         }
         this.size += (this.maxSize-this.size)*0.04
     }
@@ -347,6 +368,21 @@ export class Player {
     reload() {
         if (this.reloadTick < this.reloadMaxTick) {
             this.reloadTick++
+        }
+    }
+    
+    borderCheck() {
+        if (this.x > mapSizeX) {
+            this.velX -= 2
+        }
+        if (this.x < 0-mapSizeX/2) {
+            this.velX += 2
+        }
+        if (this.y > mapSizeX) {
+            this.velY -= 2
+        }
+        if (this.y < 0-mapSizeX/2) {
+            this.velY += 2
         }
     }
     levelUpCheck() {

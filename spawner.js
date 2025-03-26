@@ -45,8 +45,8 @@ export class Spawner {
             nested.push([i, 1/Math.pow(2.12, i-11)])
         }
         if (this.currentPolys < this.maxPoly) {
-            let randX = -this.mapSizeX/2 + Math.random() * this.mapSizeX
-            let randY = -this.mapSizeY/2 + Math.random() * this.mapSizeY
+            let randX = -this.mapSizeX/2 + Math.random() * this.mapSizeX*1.5
+            let randY = -this.mapSizeY/2 + Math.random() * this.mapSizeY*1.5
            for (let i = 0; i < 1 + Math.ceil(Math.random()*this.clumpSpawn); i++) {
                 let random = Math.random()
                 polys.forEach((pol) => {

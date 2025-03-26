@@ -286,12 +286,12 @@ function makeGrid(cellSize, camera) {
     ctx.beginPath();
 
     for (let x = -mapSizeX*2; x <= mapSizeX*4; x += cellSize) {
-        ctx.moveTo(x - camera.x, -mapSizeY-camera.y);
+        ctx.moveTo(x - camera.x, -mapSizeY*2-camera.y);
         ctx.lineTo(x - camera.x, mapSizeY*2 - camera.y);
     }
 
     for (let y = -mapSizeY*2; y <= mapSizeY*4; y += cellSize) {
-        ctx.moveTo(-mapSizeX-camera.x, y - camera.y);
+        ctx.moveTo(-mapSizeX*2-camera.x, y - camera.y);
         ctx.lineTo(mapSizeX*2 - camera.x, y - camera.y);
     }
 
@@ -302,9 +302,9 @@ function makeGrid(cellSize, camera) {
 
     // bounds
     ctx.beginPath()
-    ctx.fillStyle = "rgba(185, 185, 185,0.4)"
+    ctx.fillStyle = "rgba(185, 185, 185, 0.3)"
     ctx.fillRect(-mapSizeX*1.5-camera.x,-mapSizeY/2-camera.y, mapSizeX*3.5, -mapSizeY)
-    ctx.fillRect(-mapSizeX/2-camera.x,-mapSizeY/2-camera.y, -mapSizeX, mapSizeY*3)
+    ctx.fillRect(-mapSizeX/2-camera.x,-mapSizeY/2-camera.y, -mapSizeX, mapSizeY*2.5)
     ctx.fillRect(-mapSizeX/2-camera.x,mapSizeY-camera.y, mapSizeX*2.5, mapSizeY)
     ctx.fillRect(mapSizeX-camera.x,-mapSizeY/2-camera.y, mapSizeX, mapSizeY+mapSizeY/2)
     ctx.closePath()
