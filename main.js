@@ -146,7 +146,7 @@ export var polygonColors = [
     "rgb(0, 0, 0)"
 ];
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
-player = new Player(60, 70, 20, "rgb(0, 0, 255)", 250, 150)
+player = new Player(60, 70, 20, "rgb(0, 255, 0)", 250, 150)
 window.addEventListener("resize", (e) => {
     camera.width = window.innerWidth
     camera.height = window.innerHeight
@@ -155,6 +155,8 @@ window.addEventListener("mousemove", (e) => {
     let rect = canvas.getBoundingClientRect()
     mx = e.clientX - rect.left + camera.x
     my = e.clientY - rect.top + camera.y
+    player.mx = mx
+    player.my = my
 })
 document.addEventListener("keydown", (e) => {
     player.keys[e.keyCode] = true
@@ -172,7 +174,7 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-//globalPolygons.push(new Polygon(280, 233, 10, polygonColors, 3))
+globalPolygons.push(new Polygon(280, 233, 10, polygonColors, 3))
 let sp = new Spawner(0, 300, 10, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 20, 3)
 setInterval(()=>{
     sp.spawnLoop()
@@ -215,17 +217,15 @@ setInterval(() => {
             bullets.splice(bullets.indexOf(bul), 1)
         }
     })
-    if (player.keys[32] || player.holdMouse){
-        player.shoot()
-    }
-    
-    particles.forEach((part) => {
-        part.move()
-        part.desp()
-    })
     player.move()
-    player.reload()
     player.levelUpCheck()
+    player.guns.forEach((g) => {
+        g.reload()
+        g.animateGun()
+        if (player.holdMouse) {
+            g.shoot()
+        }
+    })
     player.velX *= frictionFactor
     player.velY *= frictionFactor
 },1000/60)
@@ -337,7 +337,6 @@ function render() {
     })
     player.draw()
     player.faceMouse()
-    
     
     mini.x = 10
     mini.y = 10

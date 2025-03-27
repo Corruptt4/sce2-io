@@ -1,4 +1,8 @@
-import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber, particles, getRadiantColor, mapSizeX  } from "./main.js"
+import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber, particles, getRadiantColor, mapSizeX, player  } from "./main.js"
+import {degToRads} from "./miscellaneous.js"
+
+
+
 export class RadiantParticle {
     constructor(x, y, velX, velY, lifetime, host) {
         this.x = x;
@@ -129,7 +133,7 @@ export class Polygon {
         let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
         this.color = polygonColors[index];
         this.radiantMode = 0
-        this.damage = 2
+        this.damage = 10 * Math.pow(1.01, sides-3)
         this.border = darkenRGB(this.color, 20);
         this.mean = null
         this.amplitude = null        
@@ -269,6 +273,7 @@ export class Polygon {
         this.y += this.velY*Math.sin(this.angle)
     }
 }
+
 export class Shock {
     constructor(x, y, size, maxSize) {
         this.x = x;
@@ -296,17 +301,17 @@ export class Shock {
     }
 }
 export class Bullet {
-    constructor(x, y, velX, velY, host, damage) {
+    constructor(x, y, velX, velY, host, damage, size, health) {
         this.x = x;
         this.y = y;
         this.velX = velX;
         this.velY = velY;
-        this.size = host.size/2
+        this.size = size
         this.host = host;
-        this.health = 10e3
+        this.health = health
         this.despawnTick = 155
         this.damage = damage
-        this.isBomb = true
+        this.isBomb = false
     }
     draw() {
         ctx.beginPath()
@@ -343,18 +348,110 @@ export class Bullet {
         this.y += this.velY
     }
 }
+export class Barrel {
+    constructor(x, y, width, height, host, stats = {
+        reload: 30,
+        damage: 15,
+        bulletHealth: 100,
+        offsetX: 0,
+        offsetY: 0,
+        bulletSpeed: 1,
+        angleOffset: 0
+    }) {
+        this.x = x
+        this.y = y
+        this.width = width;
+        this.height = height;
+        this.reloadTick = 0
+        this.reloadMaxTick = stats.reload
+        this.host = host;
+        this.angleOffset = stats.angleOffset || 0
+        this.bulletSpeed = stats.bulletSpeed || 1
+        this.stats = stats;
+        this.canAnimate = false;
+        this.shootHeight = width/2
+        this.reversingReload = false;
+        this.shootHeight2 = width
+        this.offsetX = stats.offsetX || 0
+        this.offsetY = stats.offsetY || 0
+        this.angle = host.angle+degToRads(this.angleOffset)
+        this.color = "rgb(135,135,135)"
+    }
+    reload() {
+        if (this.reloadTick < this.reloadMaxTick) {
+            this.reloadTick++
+        }
+    }
+    getGunTip() {
+    
+        let x = this.host.x + (this.offsetX * this.host.size / 10) + ((this.width+this.offsetX) * this.host.size / 10) * Math.cos(this.angle)
+        let y = this.host.y + (this.offsetX * this.host.size / 10) + ((this.height+this.offsetY) * this.host.size / 10) * Math.sin(this.angle)
+    
+        return { x, y };
+    }
+    
+    shoot() {
+        let s = this.getGunTip()
+        if (this.reloadTick >= this.reloadMaxTick) {
+            this.canAnimate = true
+            this.reloadTick = 0
+            let bullet = new Bullet(s.x, s.y, 5*this.bulletSpeed*Math.cos(this.angle), 5*this.bulletSpeed*Math.sin(this.angle), this.host, this.stats.damage, this.width/2, this.stats.bulletHealth)
+            bullets.push(bullet)
+        }
+    }
+    draw() {
+        this.angle = this.host.angle + degToRads(this.angleOffset)
+        ctx.save()
+        ctx.beginPath()
+        let gunX = this.host.x - camera.x
+        let gunY = this.host.y  - camera.y
+        ctx.translate(gunX, gunY)
+        ctx.rotate(this.angle)
+        ctx.fillStyle = this.color
+        ctx.strokeStyle = darkenRGB(this.color, 15)
+        ctx.lineWidth = 3
+        ctx.lineJoin = "round"
+        ctx.roundRect(this.offsetX*(this.host.size/10), (-this.height/2+this.offsetY)*(this.host.size/10), this.width * (this.host.size/10), this.height * (this.host.size/10), 0)
+        ctx.fill()
+        ctx.stroke()
+        ctx.closePath()
+        ctx.restore()
+    }
+    animateGun() {
+        if (this.canAnimate) {
+            if (this.width > this.shootHeight) {
+                this.width -= this.shootHeight/6
+            }
+            if (this.width < this.shootHeight && !this.reversingReload) {
+                this.width = this.shootHeight
+            }
+            if (this.width == this.shootHeight) {
+                this.reversingReload = true;
+            }
+            if (this.reversingReload && this.width < this.shootHeight2) {
+                this.width += this.shootHeight2/6
+            }
+            if (this.width >= this.shootHeight2 && this.reversingReload) {
+                this.width = this.shootHeight2
+                this.reversingReload = false
+                this.canAnimate = false
+            }
+        }
+    }
+}
 export class Player {
     constructor(x, y, size, color, health, bodyDamage) {
         this.x = x;
         this.y = y;
         this.size = size;
         this.color = color;
+        this.mx = null
+        this.my = null
         this.border = darkenRGB(color, 15)
         this.health = health;
         this.velX = 0
         this.velY = 0
         this.xp = 0
-        this.fov = 1
         this.holdMouse = false
         this.xpToNext = 100
         this.level = 1
@@ -363,14 +460,25 @@ export class Player {
         this.maxHealth = health;
         this.bodyDamage = bodyDamage;
         this.angle = 0;
-        this.reloadTick = 0
-        this.reloadMaxTick = 30
         this.keys = { }
-    }
-    reload() {
-        if (this.reloadTick < this.reloadMaxTick) {
-            this.reloadTick++
-        }
+        this.guns = [
+            new Barrel(0, 0, 18, 8, this, {
+                reload: 15,
+                damage: 18,
+                offsetX: 0,
+                offsetY: 5,
+                bulletHealth: 100,
+                angleOffset: 0
+            }),
+            new Barrel(0, 0, 18, 8, this, {
+                reload: 15,
+                damage: 18,
+                offsetX: 0,
+                offsetY: -5,
+                bulletHealth: 100,
+                angleOffset: 0
+            })
+        ]
     }
     
     borderCheck() {
@@ -398,14 +506,8 @@ export class Player {
             this.bodyDamage *= 1.1
         }
     }
-    shoot() {
-        if (this.reloadTick >= this.reloadMaxTick) {
-            this.reloadTick = 0
-            let bullet = new Bullet(this.x, this.y, 14*Math.cos(this.angle), 14*Math.sin(this.angle), this, this.bodyDamage)
-            bullets.push(bullet)
-        }
-    }
     draw() {
+        this.guns.forEach((g) => {g.draw()})
         ctx.save()
         ctx.beginPath();
         ctx.translate(this.x-camera.x,this.y-camera.y)
@@ -449,9 +551,9 @@ export class Player {
         }
     }
     faceMouse() {
-        if (mx != null && my != null) {
-            let dx = mx - this.x
-            let dy = my - this.y
+        if (this.mx != null && this.my != null) {
+            let dx = this.mx-this.x
+            let dy = this.my-this.y
             let angle = Math.atan2(dy, dx)
             this.angle = angle
         }
@@ -498,5 +600,7 @@ export class Player {
 
         this.x += this.velX;
         this.y += this.velY;
+        this.mx += this.velX
+        this.my += this.velY
     }
 }
