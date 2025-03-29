@@ -125,6 +125,7 @@ export class Polygon {
         this.lustrousStar = new RadiantStar(x, y, 0.06, 3, 0.1/(Math.pow(1.08, rad-4)), this, 1.5, true)
         this.pushX = 0
         this.pushY = 0
+        this.type = "polygon"
         this.velX = 0.95 / Math.pow(1.6, (sides-3))
         this.velY = 0.95 / Math.pow(1.6, (sides-3))
         this.size = 10 * Math.pow(1.55, (sides-3))
@@ -301,13 +302,14 @@ export class Shock {
     }
 }
 export class Bullet {
-    constructor(x, y, velX, velY, host, damage, size, health) {
+    constructor(x, y, velX, velY, host, damage, size, health,) {
         this.x = x;
         this.y = y;
         this.velX = velX;
         this.velY = velY;
         this.size = size
         this.host = host;
+        this.type = "bullet"
         this.health = health
         this.despawnTick = 155
         this.damage = damage
@@ -455,6 +457,7 @@ export class Player {
         this.holdMouse = false
         this.xpToNext = 100
         this.level = 1
+        this.type = "player"
         this.abilityMaxRadius = 90
         this.speed = 0.8 / (this.size/9)
         this.maxHealth = health;

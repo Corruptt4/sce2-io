@@ -11,17 +11,20 @@ export let player = null
 ,     shocks = []
 ,     bullets = []
 ,     particles = []
-,     mapSizeX = 12000
+,     mapSizeX = 5000
 ,     mapSizeY = mapSizeX
 ,     miniWidth = 350
 ,     miniHeight = 350
 
-export let globalStuff = globalPolygons.concat(globalBots.concat(player))
+export let globalStuff = globalPolygons.concat(bullets.concat(player))
 
 
 import { updateCamera } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
 import { Polygon, Shock, Player, Bullet } from "./entities.js"
+import { QuadTree, Rect } from "./collisions/quadTree.js"
+let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
+let qt = new QuadTree(boundary, 2)
 
 export const camera = {
     x: 0,
@@ -174,11 +177,16 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-globalPolygons.push(new Polygon(280, 233, 10, polygonColors, 3))
-let sp = new Spawner(0, 300, 10, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 20, 3)
+let maxPolys = 1000
+let spawners = []
+for (let i = 0, n = 5; i < n; i++) {
+    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 5000, qt))
+}
 setInterval(()=>{
-    sp.spawnLoop()
-},500)
+    spawners.forEach((s) => {
+        s.spawnLoop()
+    })
+},1)
 setInterval(() => {
     globalPolygons.forEach((poly) => {
         poly.move()
@@ -230,56 +238,64 @@ setInterval(() => {
     player.velY *= frictionFactor
 },1000/60)
 setInterval(() => {
-    for (let i = 0; i < globalPolygons.length; i++) {
-        let poly2 = globalPolygons[i]
-        for (let k = 0; k < globalPolygons.length; k++) {
-            let poly = globalPolygons[k]
-            if (poly2 != poly) {
-                let dist = Math.sqrt(Math.pow(poly.x - poly2.x, 2) + Math.pow(poly.y - poly2.y, 2))
-                if (dist.toFixed(0) < (poly.size+poly2.size)) {
-                    let angle = Math.atan2(poly.y - poly2.y, poly.x - poly2.x)
-                    poly.pushX += (5 * Math.cos(angle))/(poly.size/5)
-                    poly.pushY += (5 * Math.sin(angle))/(poly.size/5)
-                    
-                    poly2.pushX -= (5 * Math.cos(angle))/(poly2.size/5)
-                    poly2.pushY -= (5 * Math.sin(angle))/(poly2.size/5)
-                }
-            }
-        }
-    }
-    globalPolygons.forEach((poly) => {
-        bullets.forEach((bullet) => {
-            let dist = Math.sqrt(Math.pow(poly.x - bullet.x, 2) + Math.pow(poly.y - bullet.y, 2))
-            if (dist.toFixed(0) < (poly.size + bullet.size)) {
-                poly.health -= bullet.damage
-                bullet.health -= poly.damage
-            }
+    qt.reset()
+    if (qt.points.length == 0) {
+        globalStuff.forEach((p)=> {
+            qt.insert(p)
         })
-
-        poly.borderCheck()
-    })
-    globalPolygons.forEach((poly) => {
-        if (player) {
-            let dx = player.x - poly.x
-            let dy = player.y - poly.y
-            let dx2 = dx*dx
-            let dy2 = dy*dy
-            let dist = Math.sqrt(dx2+dy2)
-            if (dist.toFixed(0) < (poly.size + player.size)) {
-                let angle = Math.atan2(poly.y - player.y, poly.x - player.x)
-                poly.pushX += (4 * Math.cos(angle))/(poly.size/10)
-                poly.pushY += (4 * Math.sin(angle))/(poly.size/10)
-                
-                player.velX -= (4 * Math.cos(angle))/(player.size/10)
-                player.velY -= (4 * Math.sin(angle))/(player.size/10)
-
-                player.health -= poly.damage
-                poly.health -= player.bodyDamage
+    }
+    if (qt.points.length > 0) {
+        globalStuff.forEach((p) => {
+            let index = qt.points.indexOf(p)
+            if (index > -1) {
+                qt.points.splice(index, 1)
             }
-        }
+            qt.insert(p)
+        })
+        qt.groupCollisionCheck()
+    }
+    globalPolygons.forEach((p)=> {
+        p.borderCheck()
     })
+    if (qt.collisions.length > 0) {
+        qt.collisions.forEach((col) => {
+            col.forEach((memb) => {
+                for (let i = 0; i < col.length; i++) {
+                    let memb2 = col[i]
+                    if (memb != memb2) {
+                        if (memb.type == memb2.type) {
+                            let dx = memb2.x - memb.x
+                            let dy = memb2.y - memb.y
+                            let dist = dx*dx + dy*dy
+                            let radius = memb.size + memb2.size
+                            if (dist < Math.pow(radius, 2)) {
+                                let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                                memb2.pushX += (0.1 * Math.cos(angle))/(memb2.size/10)
+                                memb2.pushY += (0.1 * Math.sin(angle))/(memb2.size/10)
+                                memb.pushX -= (0.1 * Math.cos(angle))/(memb.size/10)
+                                memb.pushY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                            }
+                        }
+                        if (memb.type == "player" && memb2.type == "polygon") {
+                            let dx = memb2.x - memb.x
+                            let dy = memb2.y - memb.y
+                            let dist = dx*dx + dy*dy
+                            let radius = (memb.size + memb2.size)
+                            if (dist < Math.pow(radius, 2)) {
+                                let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                                memb2.pushX += (0.1 * Math.cos(angle))/(memb2.size/10)
+                                memb2.pushY += (0.1 * Math.sin(angle))/(memb2.size/10)
+                                memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
+                                memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                            }
+                        }
+                    }
+                }
+            })
+        })
+    }
     player.borderCheck()
-},1000/30)
+},1000/60)
 // setInterval(() => {
 //     globalPolygons.forEach((pol) => {
 //         pol.radParts()
@@ -313,10 +329,10 @@ function makeGrid(cellSize, camera) {
     ctx.fillRect(mapSizeX-camera.x,-mapSizeY/2-camera.y, mapSizeX, mapSizeY+mapSizeY/2)
     ctx.closePath()
 }
-
+qt.insert(player)
 let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX)
 function render() {
-    globalStuff = globalPolygons.concat(globalBots.concat(player))
+    globalStuff = globalPolygons.concat(bullets.concat(player))
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -337,6 +353,7 @@ function render() {
     })
     player.draw()
     player.faceMouse()
+    
     
     mini.x = 10
     mini.y = 10

@@ -1,6 +1,6 @@
 
 export class Spawner {
-    constructor(currentPolys, maxPoly, maxSides, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, clumps, chance = 5000) {
+    constructor(currentPolys, maxPoly, maxSides, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, clumps, chance = 5000, qt) {
         this.currentPolys = currentPolys;
         this.maxPoly = maxPoly;
         this.maxSides = maxSides;
@@ -11,6 +11,7 @@ export class Spawner {
         this.mapSizeY = mapSizeY;
         this.clumpSpawn = clumps
         this.radiantChance = chance
+        this.quadTree = qt
         this.radiants = []
     }
 
@@ -32,6 +33,7 @@ export class Spawner {
         let poly = new this.Polygon(x, y, chosenSides, this.polygonColors, radi);
         poly.angle = Math.random() * (Math.PI * 2)
         this.globalPolygons.push(poly);
+        this.quadTree.insert(poly)
         this.currentPolys++;
     }
 
@@ -47,14 +49,12 @@ export class Spawner {
         if (this.currentPolys < this.maxPoly) {
             let randX = -this.mapSizeX/2 + Math.random() * this.mapSizeX*1.5
             let randY = -this.mapSizeY/2 + Math.random() * this.mapSizeY*1.5
-           for (let i = 0; i < 1 + Math.ceil(Math.random()*this.clumpSpawn); i++) {
-                let random = Math.random()
-                polys.forEach((pol) => {
-                    if (random < pol[1]) {
-                        this.spawn(pol[0], randX, randY)
-                    }
-                })
-           }
+            let random = Math.random()
+            polys.forEach((pol) => {
+                if (random < pol[1]) {
+                    this.spawn(pol[0], randX, randY)
+                }
+            })
            if (Math.random() < 0.03 && this.maxSides >= 10) {
                 let random = Math.random()
                 nested.forEach((pol) => {
