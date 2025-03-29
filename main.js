@@ -15,6 +15,7 @@ export let player = null
 ,     mapSizeY = mapSizeX
 ,     miniWidth = 350
 ,     miniHeight = 350
+,     killNotifs = []
 
 export let globalStuff = globalPolygons.concat(bullets.concat(player))
 
@@ -23,8 +24,9 @@ import { updateCamera } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
 import { Polygon, Shock, Player, Bullet } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
+import { KillNotif, Minimap } from "./otherClasses.js"
 let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
-let qt = new QuadTree(boundary, 2)
+let qt = new QuadTree(boundary, 4)
 
 export const camera = {
     x: 0,
@@ -80,41 +82,6 @@ export function abreviatedNumber(num) {
     return shortNum + abreviations[index]
 }
 
-class Minimap {
-    constructor(x, y, width, world) {
-        this.x = x;
-        this.y = y;
-        this.sideLength = width;
-        this.scaleDown = width / world;
-        this.entities = []
-    }
-
-    draw() {
-        ctx.beginPath()
-        ctx.globalAlpha = 0.5
-        ctx.roundRect(this.x, this.y, this.sideLength*1.5, this.sideLength*1.5, 5)
-        ctx.fillStyle = "rgb(235, 235, 235)"
-        ctx.lineWidth = 4
-        ctx.strokeStyle = "rgb(0,0,0)"
-        ctx.fill()
-        ctx.stroke()
-        ctx.globalAlpha = 1
-        ctx.closePath()
-
-        this.entities.forEach((e) => {
-            ctx.beginPath()
-            ctx.globalAlpha = 0.5
-            ctx.arc(this.x+this.sideLength/2+e.x*this.scaleDown, this.y+this.sideLength/2+e.y*this.scaleDown, 1.5, 0, Math.PI * 2)
-            ctx.fillStyle = e.color
-            if (e.radiant) {
-                e.radiantB()
-            }
-            ctx.fill()
-            ctx.globalAlpha = 1
-            ctx.closePath()
-        })
-    }
-}
 export function darkenRGB(rgb, darken) {
     if (typeof rgb !== "string") {
         console.error("Invalid input to darkenRGB:", rgb);
@@ -149,7 +116,7 @@ export var polygonColors = [
     "rgb(0, 0, 0)"
 ];
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
-player = new Player(60, 70, 20, "rgb(0, 255, 0)", 250, 150)
+player = new Player(60, 70, 20, "rgb(0, 255, 0)", 250, 20)
 window.addEventListener("resize", (e) => {
     camera.width = window.innerWidth
     camera.height = window.innerHeight
@@ -177,10 +144,10 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-let maxPolys = 1000
+let maxPolys = 300
 let spawners = []
 for (let i = 0, n = 5; i < n; i++) {
-    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 5000, qt))
+    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 2, qt))
 }
 setInterval(()=>{
     spawners.forEach((s) => {
@@ -194,8 +161,9 @@ setInterval(() => {
         poly.pushY *= frictionFactor
         if (poly.health <= 0) {
             player.xp += poly.xp
+            killNotifs.push(new KillNotif(0, 10+mini.sideLength*1.5, "rgb(255, 0, 0)", "You killed " + poly.name))
             globalPolygons.splice(globalPolygons.indexOf(poly), 1)
-            sp.currentPolys--
+            spawners[Math.floor(Math.random()*spawners.length)].currentPolys--
         }
         if (poly.radiant > 0) {
             poly.time += 0.05
@@ -234,6 +202,10 @@ setInterval(() => {
             g.shoot()
         }
     })
+    
+    killNotifs.forEach((notif) => {
+        notif.move()
+    })
     player.velX *= frictionFactor
     player.velY *= frictionFactor
 },1000/60)
@@ -244,7 +216,6 @@ setInterval(() => {
             qt.insert(p)
         })
     }
-    if (qt.points.length > 0) {
         globalStuff.forEach((p) => {
             let index = qt.points.indexOf(p)
             if (index > -1) {
@@ -253,7 +224,6 @@ setInterval(() => {
             qt.insert(p)
         })
         qt.groupCollisionCheck()
-    }
     globalPolygons.forEach((p)=> {
         p.borderCheck()
     })
@@ -287,6 +257,19 @@ setInterval(() => {
                                 memb2.pushY += (0.1 * Math.sin(angle))/(memb2.size/10)
                                 memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
                                 memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                                memb.health -= memb2.damage
+                                memb2.health -= memb.bodyDamage
+                            }
+                        }
+                        if (memb.type == "bullet" && memb2.type == "polygon") {
+                            let dx = memb2.x - memb.x
+                            let dy = memb2.y - memb.y
+                            let dist = dx*dx + dy*dy
+                            let radius = (memb.size + memb2.size)
+                            if (dist < Math.pow(radius, 2)) {
+                                let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                                memb.health -= memb2.damage
+                                memb2.health -= memb.damage
                             }
                         }
                     }
@@ -336,6 +319,9 @@ function render() {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+    killNotifs.forEach((notif) => {
+        notif.draw()
+    })
     updateCamera(player)
     makeGrid(20, camera)
     

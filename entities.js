@@ -125,6 +125,7 @@ export class Polygon {
         this.lustrousStar = new RadiantStar(x, y, 0.06, 3, 0.1/(Math.pow(1.08, rad-4)), this, 1.5, true)
         this.pushX = 0
         this.pushY = 0
+        this.collisionArray = []
         this.type = "polygon"
         this.velX = 0.95 / Math.pow(1.6, (sides-3))
         this.velY = 0.95 / Math.pow(1.6, (sides-3))
@@ -134,10 +135,11 @@ export class Polygon {
         let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
         this.color = polygonColors[index];
         this.radiantMode = 0
-        this.damage = 10 * Math.pow(1.01, sides-3)
+        this.damage = 1 * Math.pow(1.01, sides-3)
         this.border = darkenRGB(this.color, 20);
         this.mean = null
         this.amplitude = null        
+        this.name = ""
         this.maxSpeed = 0.125
         this.speed = 0.125*Math.pow(1.05 , rad)
         
@@ -210,7 +212,8 @@ export class Polygon {
         }
         
         ctx.beginPath()
-        let name = ((this.radiant>0) ? (((this.radiant>4) ? "Highly Radiant " + this.radiant : this.radiantnames[this.radiant-1]) + " ") : "") + (this.miscolored ? "Miscolored " : "") + (this.misshapen ? "Misshapen " : "") + ((this.actualSides-3 < 18) ? this.polygonalnames[this.actualSides-3] : this.sides + "-gon")
+        this.name = ((this.radiant>0) ? (((this.radiant>4) ? "Highly Radiant " + this.radiant : this.radiantnames[this.radiant-1]) + " ") : "") + (this.miscolored ? "Miscolored " : "") + (this.misshapen ? "Misshapen " : "") + ((this.actualSides-3 < 18) ? this.polygonalnames[this.actualSides-3] : this.sides + "-gon")
+        
         ctx.font = "16px Arial"
         ctx.fillStyle = "white"
         ctx.strokeStyle = "black"
@@ -218,8 +221,8 @@ export class Polygon {
         ctx.lineJoin = "round"
         ctx.textAlign = "center"
         ctx.globalAlpha = 0.1
-        ctx.strokeText(name, this.x-camera.x, this.y-this.size-camera.y)
-        ctx.fillText(name, this.x-camera.x, this.y-this.size-camera.y)
+        ctx.strokeText(this.name, this.x-camera.x, this.y-this.size-camera.y)
+        ctx.fillText(this.name, this.x-camera.x, this.y-this.size-camera.y)
         ctx.globalAlpha = 1
         ctx.closePath()
 
@@ -385,11 +388,16 @@ export class Barrel {
         }
     }
     getGunTip() {
+        let gunX = this.x + this.host.x
+        let gunY = this.y + this.host.y;
     
-        let x = this.host.x + (this.offsetX * this.host.size / 10) + ((this.width+this.offsetX) * this.host.size / 10) * Math.cos(this.angle)
-        let y = this.host.y + (this.offsetX * this.host.size / 10) + ((this.height+this.offsetY) * this.host.size / 10) * Math.sin(this.angle)
+        let tipX = gunX + (this.width + this.offsetX) * (this.host.size / 10) * Math.cos(this.angle)
+                         - this.offsetY * (this.host.size / 10) * Math.sin(this.angle);
+                         
+        let tipY = gunY + (this.width + this.offsetX) * (this.host.size / 10) * Math.sin(this.angle)
+                         + this.offsetY * (this.host.size / 10) * Math.cos(this.angle);
     
-        return { x, y };
+        return { x: tipX, y: tipY };
     }
     
     shoot() {
@@ -397,7 +405,7 @@ export class Barrel {
         if (this.reloadTick >= this.reloadMaxTick) {
             this.canAnimate = true
             this.reloadTick = 0
-            let bullet = new Bullet(s.x, s.y, 5*this.bulletSpeed*Math.cos(this.angle), 5*this.bulletSpeed*Math.sin(this.angle), this.host, this.stats.damage, this.width/2, this.stats.bulletHealth)
+            let bullet = new Bullet(s.x, s.y, 5*this.bulletSpeed*Math.cos(this.angle), 5*this.bulletSpeed*Math.sin(this.angle), this.host, this.stats.damage, this.height*(this.host.size/10)/2, this.stats.bulletHealth)
             bullets.push(bullet)
         }
     }
@@ -413,7 +421,12 @@ export class Barrel {
         ctx.strokeStyle = darkenRGB(this.color, 15)
         ctx.lineWidth = 3
         ctx.lineJoin = "round"
-        ctx.roundRect(this.offsetX*(this.host.size/10), (-this.height/2+this.offsetY)*(this.host.size/10), this.width * (this.host.size/10), this.height * (this.host.size/10), 0)
+        ctx.roundRect(
+            this.offsetX*(this.host.size/10), 
+            (-this.height/2+this.offsetY)*(this.host.size/10),
+             this.width * (this.host.size/10), 
+             this.height * (this.host.size/10), 0
+            )
         ctx.fill()
         ctx.stroke()
         ctx.closePath()
@@ -449,6 +462,7 @@ export class Player {
         this.color = color;
         this.mx = null
         this.my = null
+        this.collisionArray = []
         this.border = darkenRGB(color, 15)
         this.health = health;
         this.velX = 0
@@ -465,19 +479,19 @@ export class Player {
         this.angle = 0;
         this.keys = { }
         this.guns = [
-            new Barrel(0, 0, 18, 8, this, {
-                reload: 15,
-                damage: 18,
-                offsetX: 0,
-                offsetY: 5,
-                bulletHealth: 100,
-                angleOffset: 0
-            }),
-            new Barrel(0, 0, 18, 8, this, {
+            new Barrel(0, 0, 20, 8, this, {
                 reload: 15,
                 damage: 18,
                 offsetX: 0,
                 offsetY: -5,
+                bulletHealth: 100,
+                angleOffset: 0
+            }),
+            new Barrel(0, 0, 20, 8, this, {
+                reload: 15,
+                damage: 18,
+                offsetX: 0,
+                offsetY: 5,
                 bulletHealth: 100,
                 angleOffset: 0
             })
