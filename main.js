@@ -1,7 +1,7 @@
 export const canvas = document.getElementById("c")
         ,   ctx = canvas.getContext("2d")
 
-export const globalPolygons = []
+export let globalPolygons = []
         ,   globalBots = []
 
 export let player = null
@@ -17,16 +17,16 @@ export let player = null
 ,     miniHeight = 350
 ,     killNotifs = []
 
-export let globalStuff = globalPolygons.concat(bullets.concat(player))
+export let globalStuff = globalPolygons.concat(bullets.concat(player).concat(globalBots))
 
 
 import { updateCamera } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
-import { Polygon, Shock, Player, Bullet } from "./entities.js"
+import { Polygon, Player, Bot } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
 import { KillNotif, Minimap } from "./otherClasses.js"
 let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
-let qt = new QuadTree(boundary, 4)
+let qt = new QuadTree(boundary, 8)
 
 export const camera = {
     x: 0,
@@ -144,10 +144,17 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-let maxPolys = 300
+let maxPolys = 200
 let spawners = []
 for (let i = 0, n = 5; i < n; i++) {
     spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 2, qt))
+}
+for (let i = 0; i < 30; i++) {
+    let bot = new Bot(-mapSizeX/2 + Math.random()*mapSizeX*1.5, -mapSizeX/2 + Math.random()*mapSizeX*1.5, 20, "rgb(0,255,0)", 250, 20)
+    bot.entities = globalPolygons
+    globalBots.push(bot)
+    globalStuff.push(bot)
+    qt.insert(bot)
 }
 setInterval(()=>{
     spawners.forEach((s) => {
@@ -160,8 +167,16 @@ setInterval(() => {
         poly.pushX *= frictionFactor
         poly.pushY *= frictionFactor
         if (poly.health <= 0) {
-            player.xp += poly.xp
-            killNotifs.push(new KillNotif(0, 10+mini.sideLength*1.5, "rgb(255, 0, 0)", "You killed " + poly.name))
+            poly.collisionArray.forEach((p) => {
+                if (p) {
+                    if (p.type === "bullet") {
+                        p.host.xp += poly.xp/poly.collisionArray.length
+                    } else {
+                        p.xp += poly.xp/poly.collisionArray.length
+                    }
+                }
+            })
+            killNotifs.push(new KillNotif(0, 10+mini.sideLength*1.5, "rgb(255, 0, 0)", poly.name + " died."))
             globalPolygons.splice(globalPolygons.indexOf(poly), 1)
             spawners[Math.floor(Math.random()*spawners.length)].currentPolys--
         }
@@ -193,6 +208,23 @@ setInterval(() => {
             bullets.splice(bullets.indexOf(bul), 1)
         }
     })
+    
+    globalStuff.forEach((b) => {
+        if (b.type == "bot") {
+            b.move()
+            b.guns.forEach((g) => {
+                    if (b.target) {
+                        g.reload()
+                        g.shoot()
+                        b.levelUpCheck()
+                    }
+                    g.animateGun()
+            })
+            b.borderCheck()
+            b.velX *= frictionFactor
+            b.velY *= frictionFactor
+        }
+    })
     player.move()
     player.levelUpCheck()
     player.guns.forEach((g) => {
@@ -210,13 +242,19 @@ setInterval(() => {
     player.velY *= frictionFactor
 },1000/60)
 setInterval(() => {
+    
+   globalBots.forEach((b) => {
+        b.entities = globalPolygons
+   })
     qt.reset()
-    if (qt.points.length == 0) {
-        globalStuff.forEach((p)=> {
-            qt.insert(p)
-        })
-    }
+    globalStuff.forEach((p)=> {
+        qt.insert(p)
+    })
     globalStuff.forEach((p) => {
+        let ind = qt.points.indexOf(p)
+        if (ind > -1) {
+            qt.points.splice(ind, 1)
+        }
         qt.insert(p)
     })
     qt.groupCollisionCheck()
@@ -229,25 +267,21 @@ setInterval(() => {
                 for (let i = 0; i < col.length; i++) {
                     let memb2 = col[i]
                     if (memb != memb2) {
-                        if (memb.type == memb2.type) {
-                            let dx = memb2.x - memb.x
-                            let dy = memb2.y - memb.y
-                            let dist = dx*dx + dy*dy
-                            let radius = memb.size + memb2.size
-                            if (dist < Math.pow(radius, 2)) {
+                        if (memb.type === memb2.type) {
                                 let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
                                 memb2.pushX += (0.1 * Math.cos(angle))/(memb2.size/10)
                                 memb2.pushY += (0.1 * Math.sin(angle))/(memb2.size/10)
                                 memb.pushX -= (0.1 * Math.cos(angle))/(memb.size/10)
                                 memb.pushY -= (0.1 * Math.sin(angle))/(memb.size/10)
-                            }
                         }
-                        if (memb.type == "player" && memb2.type == "polygon") {
-                            let dx = memb2.x - memb.x
-                            let dy = memb2.y - memb.y
-                            let dist = dx*dx + dy*dy
-                            let radius = (memb.size + memb2.size)
-                            if (dist < Math.pow(radius, 2)) {
+                        if (memb.type == "bot" && memb2.type == "bot") {
+                                let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                                memb2.velX += (0.1 * Math.cos(angle))/(memb2.size/10)
+                                memb2.velY += (0.1 * Math.sin(angle))/(memb2.size/10)
+                                memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
+                                memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                        }
+                        if ((memb.type == "player" || memb.type == "bot") && memb2.type == "polygon") {
                                 let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
                                 memb2.pushX += (0.1 * Math.cos(angle))/(memb2.size/10)
                                 memb2.pushY += (0.1 * Math.sin(angle))/(memb2.size/10)
@@ -255,18 +289,15 @@ setInterval(() => {
                                 memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
                                 memb.health -= memb2.damage
                                 memb2.health -= memb.bodyDamage
-                            }
+                                memb2.collisionArray.push(memb)
                         }
                         if (memb.type == "bullet" && memb2.type == "polygon") {
-                            let dx = memb2.x - memb.x
-                            let dy = memb2.y - memb.y
-                            let dist = dx*dx + dy*dy
-                            let radius = (memb.size + memb2.size)
-                            if (dist < Math.pow(radius, 2)) {
-                                let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                            let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                                memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
+                                memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
                                 memb.health -= memb2.damage
                                 memb2.health -= memb.damage
-                            }
+                                memb2.collisionArray.push(memb)
                         }
                     }
                 }
@@ -311,7 +342,7 @@ function makeGrid(cellSize, camera) {
 qt.insert(player)
 let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX)
 function render() {
-    globalStuff = globalPolygons.concat(bullets.concat(player))
+    globalStuff = globalPolygons.concat(bullets.concat(player)).concat(globalBots)
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -330,6 +361,11 @@ function render() {
     particles.forEach((part) => {
         part.draw()
     })
+    globalStuff.forEach((b) => {
+        if (b.type == "bot") {
+            b.draw()
+        }
+    })
     player.draw()
     player.faceMouse()
     
@@ -338,7 +374,7 @@ function render() {
     mini.y = 10
     mini.entities = globalStuff
     mini.draw()
-    
+    // qt.draw(ctx, camera)
     killNotifs.forEach((notif) => {
         notif.draw()
     })

@@ -21,7 +21,8 @@ export class Minimap {
         ctx.closePath()
 
         this.entities.forEach((e) => {
-            ctx.beginPath()
+            if (e.type !== "bullet") {
+                ctx.beginPath()
             ctx.globalAlpha = 0.5
             ctx.arc(this.x+this.sideLength/2+e.x*this.scaleDown, this.y+this.sideLength/2+e.y*this.scaleDown, 1.5, 0, Math.PI * 2)
             ctx.fillStyle = e.color
@@ -31,6 +32,7 @@ export class Minimap {
             ctx.fill()
             ctx.globalAlpha = 1
             ctx.closePath()
+            }
         })
     }
 }
@@ -43,7 +45,7 @@ export class KillNotif {
         this.width = 0
         this.color = color;
         this.text = text;
-        this.lifeTime = 250
+        this.lifeTime = 150
     }
     draw() {
         ctx.beginPath()
@@ -57,7 +59,7 @@ export class KillNotif {
     move() {
         this.targetX = this.setX + this.width
         this.x += (this.targetX - this.x) * 0.1
-        this.y += 2
+        this.y += 8
         this.lifeTime--
         if (this.lifeTime <= 0) {
             killNotifs.splice(killNotifs.indexOf(this), 1)

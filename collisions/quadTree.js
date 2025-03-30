@@ -62,7 +62,6 @@ export class QuadTree {
         }
     }
     reset() {
-        this.points = []
         this.collisions = []
         this.divided = false
         this.ne = null

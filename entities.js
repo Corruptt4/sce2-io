@@ -305,7 +305,7 @@ export class Shock {
     }
 }
 export class Bullet {
-    constructor(x, y, velX, velY, host, damage, size, health,) {
+    constructor(x, y, velX, velY, host, damage, size, health) {
         this.x = x;
         this.y = y;
         this.velX = velX;
@@ -361,7 +361,8 @@ export class Barrel {
         offsetX: 0,
         offsetY: 0,
         bulletSpeed: 1,
-        angleOffset: 0
+        angleOffset: 0,
+        delay: 0
     }) {
         this.x = x
         this.y = y
@@ -372,6 +373,7 @@ export class Barrel {
         this.host = host;
         this.angleOffset = stats.angleOffset || 0
         this.bulletSpeed = stats.bulletSpeed || 1
+        this.delay = stats.delay || 0
         this.stats = stats;
         this.canAnimate = false;
         this.shootHeight = width/2
@@ -383,7 +385,7 @@ export class Barrel {
         this.color = "rgb(135,135,135)"
     }
     reload() {
-        if (this.reloadTick < this.reloadMaxTick) {
+        if (this.reloadTick < (this.reloadMaxTick+this.reloadMaxTick*this.delay)) {
             this.reloadTick++
         }
     }
@@ -402,10 +404,10 @@ export class Barrel {
     
     shoot() {
         let s = this.getGunTip()
-        if (this.reloadTick >= this.reloadMaxTick) {
+        if (this.reloadTick >= (this.reloadMaxTick+this.reloadMaxTick*this.delay)) {
             this.canAnimate = true
             this.reloadTick = 0
-            let bullet = new Bullet(s.x, s.y, 5*this.bulletSpeed*Math.cos(this.angle), 5*this.bulletSpeed*Math.sin(this.angle), this.host, this.stats.damage, this.height*(this.host.size/10)/2, this.stats.bulletHealth)
+            let bullet = new Bullet(s.x, s.y, 5*this.bulletSpeed*Math.cos(this.angle), 5*this.bulletSpeed*Math.sin(this.angle), this.host, (this.stats.damage * (1.03**this.host.level)), this.height*(this.host.size/10)/2, (this.stats.bulletHealth * (1.03**this.host.level)))
             bullets.push(bullet)
         }
     }
@@ -468,6 +470,7 @@ export class Player {
         this.velX = 0
         this.velY = 0
         this.xp = 0
+        this.team = 1
         this.holdMouse = false
         this.xpToNext = 100
         this.level = 1
@@ -481,19 +484,22 @@ export class Player {
         this.guns = [
             new Barrel(0, 0, 20, 8, this, {
                 reload: 15,
-                damage: 18,
+                damage: 40,
                 offsetX: 0,
                 offsetY: -5,
-                bulletHealth: 100,
+                bulletSpeed: 1.5,
+                bulletHealth: 25,
                 angleOffset: 0
             }),
             new Barrel(0, 0, 20, 8, this, {
                 reload: 15,
-                damage: 18,
+                damage: 40,
                 offsetX: 0,
                 offsetY: 5,
-                bulletHealth: 100,
-                angleOffset: 0
+                bulletSpeed: 1.5,
+                bulletHealth: 25,
+                angleOffset: 0,
+                delay: 0.5
             })
         ]
     }
@@ -517,7 +523,7 @@ export class Player {
             this.level++
             this.xp -= this.xpToNext
             this.xpToNext *= 1.2
-            this.size *= 1.01
+            this.size *= 1.005
             this.maxHealth *= 1.1
             this.health *= 1.1
             this.bodyDamage *= 1.1
@@ -619,5 +625,174 @@ export class Player {
         this.y += this.velY;
         this.mx += this.velX
         this.my += this.velY
+    }
+}
+export class Bot {
+    constructor(x, y, size, color, health, bodyDamage, entities) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.color = color;
+        this.mx = null
+        this.my = null
+        this.collisionArray = []
+        this.border = darkenRGB(color, 15)
+        this.health = health;
+        this.velX = 0
+        this.velY = 0
+        this.xp = 0
+        this.entities = entities;
+        this.target = null
+        this.team = 1
+        this.holdMouse = false
+        this.xpToNext = 100
+        this.level = 1
+        this.type = "bot"
+        this.abilityMaxRadius = 90
+        this.speed = 0.8 / (this.size/9)
+        this.range = size*20
+        this.maxHealth = health;
+        this.bodyDamage = bodyDamage;
+        this.angle = 0;
+        this.angleChangeTick = 90
+        this.keys = { }
+        this.guns = []
+        for (let i = 0; i < 8; i++) {
+            this.guns.push(
+                new Barrel(0, 0, 18, 8, this, {
+                    damage: 15,
+                    bulletHealth: 25,
+                    offsetX: 0,
+                    offsetY: 0,
+                    reload: 25,
+                    bulletSpeed: 1.5,
+                    angleOffset: (360/8)*i,
+                    delay: i%2 ? 0.5 : 0
+                })
+            )
+        }
+    }
+    
+    borderCheck() {
+        if (this.x > mapSizeX) {
+            this.velX -= 2
+        }
+        if (this.x < 0-mapSizeX/2) {
+            this.velX += 2
+        }
+        if (this.y > mapSizeX) {
+            this.velY -= 2
+        }
+        if (this.y < 0-mapSizeX/2) {
+            this.velY += 2
+        }
+    }
+    levelUpCheck() {
+        if (this.xp >= this.xpToNext) {
+            this.level++
+            this.xp -= this.xpToNext
+            this.xpToNext *= 1.2
+            this.size *= 1.005
+            this.maxHealth *= 1.1
+            this.health *= 1.1
+            this.bodyDamage *= 1.1
+            this.range = this.size*20
+        }
+    }
+    draw() {
+        this.guns.forEach((g) => {g.draw()})
+        ctx.save()
+        ctx.beginPath();
+        ctx.translate(this.x-camera.x,this.y-camera.y)
+        ctx.fillStyle = this.color;
+        ctx.strokeStyle = this.border;
+        ctx.rotate(this.angle)
+        ctx.arc(0, 0, this.size, 0, Math.PI * 2, 0)
+        ctx.fill()
+        ctx.lineWidth = 3
+        ctx.stroke()
+        ctx.closePath()
+        ctx.restore()
+
+        ctx.save()
+        ctx.beginPath()
+        ctx.translate(this.x-camera.x, this.y-camera.y)
+        ctx.font = "15px Arial"
+        ctx.textAlign = "center"
+        ctx.fillStyle = this.color;
+        ctx.strokeStyle = this.border;
+        ctx.fillText(abreviatedNumber(this.xp) + "/" + abreviatedNumber(this.xpToNext), 0, -this.size-10, 200)
+        ctx.fillText("Lv." + abreviatedNumber(this.level), 0, -this.size-25, 200)
+        ctx.closePath()
+        ctx.restore()
+
+        if ((this.health/this.maxHealth) < 1) {
+            ctx.beginPath()
+            ctx.fillStyle = darkenRGB(this.color, 15);
+            ctx.lineWidth = 6
+            ctx.strokeStyle = darkenRGB(this.color, 15)
+            ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, this.size*2, 3, 3)
+            ctx.fill()
+            ctx.stroke()        
+            ctx.closePath()
+
+            ctx.beginPath()
+            ctx.fillStyle = this.color
+            ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, (this.size*2)*(this.health / this.maxHealth), 3,3)
+            ctx.fill()
+            ctx.closePath()
+        }
+    }
+    faceMouse() {
+        if (this.mx != null && this.my != null) {
+            let dx = this.mx-this.x
+            let dy = this.my-this.y
+            let angle = Math.atan2(dy, dx)
+            this.angle = angle
+        }
+    }
+    move() {
+        let possibleTargets = []
+        if (!this.target && this.entities.length > 0) {
+            this.entities.forEach((e) => {
+                let dx = e.x - this.x
+                let dy = e.y - this.y
+                let dist = dx*dx+dy*dy
+                if (dist < Math.pow((this.range+e.size), 2)) {
+                    possibleTargets.push(e)
+                }
+            })
+        }
+        if (possibleTargets && this.target == null) {
+            possibleTargets.sort((a, b) => (b.xp - a.xp))
+            this.target = possibleTargets[0]
+        }
+
+        if (this.target == null) {
+            this.velX += Math.cos(this.angle) * this.speed
+            this.velY += Math.sin(this.angle) * this.speed
+            this.angleChangeTick--
+            if (this.angleChangeTick <= 0) {
+                this.angleChangeTick = 90
+                this.angle = Math.random() * (Math.PI * 2)
+            }
+        }
+
+        if (this.target) {
+            let dx = this.target.x - this.x
+            let dy = this.target.y - this.y
+            let dist = dx*dx + dy*dy
+            let r = (this.size*1.8) + this.target.size
+            this.angle = Math.atan2(dy, dx)
+            if (dist > r*r) {
+                this.velX += this.speed * Math.cos(this.angle)
+                this.velY += this.speed * Math.sin(this.angle)
+            }
+            if (this.target.health <= 0) {
+                this.target = null
+            }
+        }
+        this.x += this.velX
+        this.y += this.velY
     }
 }
