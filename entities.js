@@ -657,17 +657,17 @@ export class Bot {
         this.angleChangeTick = 90
         this.keys = { }
         this.guns = []
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 3; i++) {
             this.guns.push(
                 new Barrel(0, 0, 18, 8, this, {
                     damage: 15,
                     bulletHealth: 25,
                     offsetX: 0,
                     offsetY: 0,
-                    reload: 25,
+                    reload: 15,
                     bulletSpeed: 1.5,
-                    angleOffset: (360/8)*i,
-                    delay: i%2 ? 0.5 : 0
+                    angleOffset: (360/3)*i,
+                    delay: 0
                 })
             )
         }
@@ -765,6 +765,9 @@ export class Bot {
         }
         if (possibleTargets && this.target == null) {
             possibleTargets.sort((a, b) => (b.xp - a.xp))
+            possibleTargets.forEach((p) => {
+                if (p.type === "player" || p.type === "bot") {}
+            })
             this.target = possibleTargets[0]
         }
 
