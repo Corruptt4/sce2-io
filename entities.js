@@ -172,7 +172,7 @@ export class Polygon {
         } else {
             color = extractRGB(this.color)
         }
-        let white = { r: 255, g: 0, b: 0 }
+        let white = { r: 255, g: 255, b: 255 }
         let n = {
             r: Math.round((1 - percent) * color.r + percent*white.r),
             g: Math.round((1 - percent) * color.g + percent*white.g),
