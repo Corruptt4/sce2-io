@@ -877,8 +877,8 @@ export class Bot {
                 pangle = -Math.atan2(pdx, pdy)
             }
             if (dist <= r*r) {
-                this.velX += this.speed * Math.cos((this.followTeammatePlayer ? pangle : angle ))
-                this.velY += this.speed * Math.sin((this.followTeammatePlayer ? pangle : angle ))
+                this.velX += this.speed * Math.cos((this.followTeammatePlayer ? pangle : this.angle ))
+                this.velY += this.speed * Math.sin((this.followTeammatePlayer ? pangle : this.angle ))
             }
             if (this.target.health <= 0 || dist >= (r*(3*r))) {
                 this.target = null
@@ -891,7 +891,7 @@ export class Bot {
             let angle = Math.atan2(dy, dx)
             this.velX += Math.cos(angle) * this.speed
             this.velY += Math.sin(angle) * this.speed
-        } else {
+        } else if (!this.target && !this.followTeammatePlayer) {
             this.velX += Math.cos(this.angle) * this.speed
             this.velY += Math.sin(this.angle) * this.speed
         }

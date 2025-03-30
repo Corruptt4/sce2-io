@@ -100,7 +100,7 @@ export function darkenRGB(rgb, darken) {
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
-var globalBotCount = 130
+var globalBotCount = 80
 var botCount = 0
 
 export var polygonColors = [
@@ -355,8 +355,8 @@ setInterval(() => {
                         }
                         if (memb.type == "bullet" && memb2.type == "polygon") {
                             let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
-                                memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
-                                memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                                memb.velX -= (0.05 * Math.cos(angle))/(memb.size/10)
+                                memb.velY -= (0.05 * Math.sin(angle))/(memb.size/10)
                                 memb2.damageTaken(memb.damage)
                                 memb.health -= memb2.damage
                                 memb2.health -= memb.damage
