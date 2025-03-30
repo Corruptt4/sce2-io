@@ -147,11 +147,11 @@ document.addEventListener("mouseup", (e) => {
 let maxPolys = 200
 let spawners = []
 for (let i = 0, n = 5; i < n; i++) {
-    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 2, qt))
+    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 15, qt))
 }
 for (let i = 0; i < 30; i++) {
     let bot = new Bot(-mapSizeX/2 + Math.random()*mapSizeX*1.5, -mapSizeX/2 + Math.random()*mapSizeX*1.5, 20, "rgb(0,255,0)", 250, 20)
-    bot.entities = globalPolygons
+    bot.entities = globalStuff
     globalBots.push(bot)
     globalStuff.push(bot)
     qt.insert(bot)
