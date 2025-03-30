@@ -6,6 +6,7 @@ export class Minimap {
         this.sideLength = width;
         this.scaleDown = width / world;
         this.entities = []
+        this.zones = []
     }
 
     draw() {
@@ -21,18 +22,30 @@ export class Minimap {
         ctx.closePath()
 
         this.entities.forEach((e) => {
-            if (e.type !== "bullet") {
+            if (e.type !== "bullet" && e.type !== "polygon") {
                 ctx.beginPath()
+                ctx.globalAlpha = 0.5
+                ctx.arc(this.x+this.sideLength/2+e.x*this.scaleDown, this.y+this.sideLength/2+e.y*this.scaleDown, 1.5, 0, Math.PI * 2)
+                ctx.fillStyle = e.type === "player" ? "rgb(0, 0, 0)" : e.color
+                if (e.radiant) {
+                    e.radiantB()
+                }
+                ctx.fill()
+                ctx.globalAlpha = 1
+                ctx.closePath()
+            }
+        })
+        this.zones.forEach((e) => {
+            ctx.beginPath()
             ctx.globalAlpha = 0.5
-            ctx.arc(this.x+this.sideLength/2+e.x*this.scaleDown, this.y+this.sideLength/2+e.y*this.scaleDown, 1.5, 0, Math.PI * 2)
             ctx.fillStyle = e.color
-            if (e.radiant) {
-                e.radiantB()
-            }
-            ctx.fill()
-            ctx.globalAlpha = 1
+            ctx.fillRect(
+                this.x+this.sideLength/2+e.x*this.scaleDown,
+                this.y+this.sideLength/2+e.y*this.scaleDown,
+                this.l*this.scaleDown,
+                this.l*this.scaleDown,
+            )
             ctx.closePath()
-            }
         })
     }
 }

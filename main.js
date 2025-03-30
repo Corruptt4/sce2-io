@@ -11,7 +11,7 @@ export let player = null
 ,     shocks = []
 ,     bullets = []
 ,     particles = []
-,     mapSizeX = 5000
+,     mapSizeX = 8000
 ,     mapSizeY = mapSizeX
 ,     miniWidth = 350
 ,     miniHeight = 350
@@ -22,13 +22,13 @@ export let globalStuff = globalPolygons.concat(bullets.concat(player).concat(glo
 
 import { updateCamera } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
-import { Polygon, Player, Bot } from "./entities.js"
+import { Polygon, Player, Bot, TeamZone } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
 import { KillNotif, Minimap } from "./otherClasses.js"
 let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
 let qt = new QuadTree(boundary, 8)
 
-export const camera = {
+export var camera = {
     x: 0,
     y: 0,
     width: window.innerWidth,
@@ -100,6 +100,8 @@ export function darkenRGB(rgb, darken) {
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
+var globalBotCount = 130
+var botCount = 0
 
 export var polygonColors = [
     "rgb(255, 228, 107)",
@@ -115,8 +117,30 @@ export var polygonColors = [
     "rgb(237, 237, 255)",
     "rgb(0, 0, 0)"
 ];
+export var teamColors = [
+    "rgb(0, 0, 255)",
+    "rgb(255, 0, 0)",
+    "rgb(0, 255, 0)",
+    "rgb(255, 0, 125)"
+]
+export var teamZones = [
+    new TeamZone(-mapSizeX/2, -mapSizeX/2, 600, 1, teamColors[0]),
+    new TeamZone(mapSizeX-600, -mapSizeX/2, 600, 1, teamColors[1]),
+    new TeamZone(-mapSizeX/2, mapSizeX-600, 600, 1, teamColors[2]),
+    new TeamZone(mapSizeX-600, mapSizeX-600, 600, 1, teamColors[3])
+]
+let randomTeam = Math.floor(Math.random()*teamColors.length)
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
-player = new Player(60, 70, 20, "rgb(0, 255, 0)", 250, 20)
+let chosenZone = teamZones[randomTeam]
+player = new Player(
+    chosenZone.x + Math.random()*chosenZone.l,  
+    chosenZone.y + Math.random()*chosenZone.l, 
+    20, 
+    teamColors[randomTeam], 
+    800, 
+    5
+)
+player.team = randomTeam+1
 window.addEventListener("resize", (e) => {
     camera.width = window.innerWidth
     camera.height = window.innerHeight
@@ -144,24 +168,65 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-let maxPolys = 200
+let maxPolys = 400
 let spawners = []
-for (let i = 0, n = 5; i < n; i++) {
-    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 15, qt))
+for (let i = 0, n = 2; i < n; i++) {
+    spawners.push(new Spawner(0, maxPolys/n, 14, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 15, qt))
 }
-for (let i = 0; i < 30; i++) {
-    let bot = new Bot(-mapSizeX/2 + Math.random()*mapSizeX*1.5, -mapSizeX/2 + Math.random()*mapSizeX*1.5, 20, "rgb(0,255,0)", 250, 20)
-    bot.entities = globalStuff
-    globalBots.push(bot)
-    globalStuff.push(bot)
-    qt.insert(bot)
+function spawnBot(lim) {
+    for (let i = 0; i < lim; i++) {
+        botCount++
+        let team = 1+Math.floor(Math.random()*4)
+        let teamZone = teamZones[team-1]
+        let bot = new Bot(
+            teamZone.x + Math.random()*teamZone.l,  
+            teamZone.y + Math.random()*teamZone.l, 
+            20, 
+            "rgb(0,255,0)", 
+            800, 
+            5, 
+            team
+        )
+        bot.diet = globalPolygons
+        bot.entities = globalStuff
+        globalBots.push(bot)
+        globalStuff.push(bot)
+        qt.insert(bot)
+    }
 }
 setInterval(()=>{
     spawners.forEach((s) => {
         s.spawnLoop()
     })
-},1)
+},100)
 setInterval(() => {
+    if (botCount <= globalBotCount) {
+        spawnBot(1)
+    }
+}, 200)
+setInterval(() => {
+    globalBots.forEach((b) => {
+        if (b.health <= 0) {
+            botCount--
+            b.collisionArray.forEach((ins) => {
+                if (ins) {
+                    if (ins.type == "bullet") {
+                        ins.host.xp += b.xp / b.collisionArray.length
+                    }
+                    if (ins.type == "bot") {
+                        ins.xp += b.xp / b.collisionArray.length
+                    }
+                    if (ins.type == "player") {
+                        ins.xp += b.xp / b.collisionArray.length
+                    }
+                    if (ins.type == "polygon") {
+                        ins.xp += b.xp / b.collisionArray.length
+                    }
+                }
+            })
+            globalBots.splice(globalBots.indexOf(b), 1)
+        }
+    })
     globalPolygons.forEach((poly) => {
         poly.move()
         poly.pushX *= frictionFactor
@@ -230,7 +295,7 @@ setInterval(() => {
     player.guns.forEach((g) => {
         g.reload()
         g.animateGun()
-        if (player.holdMouse) {
+        if (player.holdMouse || player.autoFire) {
             g.shoot()
         }
     })
@@ -244,7 +309,8 @@ setInterval(() => {
 setInterval(() => {
     
    globalBots.forEach((b) => {
-        b.entities = globalPolygons
+        b.entities = globalStuff
+        b.diet = globalPolygons
    })
     qt.reset()
     globalStuff.forEach((p)=> {
@@ -274,31 +340,83 @@ setInterval(() => {
                                 memb.pushX -= (0.1 * Math.cos(angle))/(memb.size/10)
                                 memb.pushY -= (0.1 * Math.sin(angle))/(memb.size/10)
                         }
-                        if (memb.type == "bot" && memb2.type == "bot") {
-                                let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
-                                memb2.velX += (0.1 * Math.cos(angle))/(memb2.size/10)
-                                memb2.velY += (0.1 * Math.sin(angle))/(memb2.size/10)
-                                memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
-                                memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
-                        }
+                       
                         if ((memb.type == "player" || memb.type == "bot") && memb2.type == "polygon") {
                                 let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
                                 memb2.pushX += (0.1 * Math.cos(angle))/(memb2.size/10)
                                 memb2.pushY += (0.1 * Math.sin(angle))/(memb2.size/10)
                                 memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
                                 memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                                memb2.damageTaken(memb.bodyDamage)
                                 memb.health -= memb2.damage
                                 memb2.health -= memb.bodyDamage
                                 memb2.collisionArray.push(memb)
+                                memb.collisionArray.push(memb2)
                         }
                         if (memb.type == "bullet" && memb2.type == "polygon") {
                             let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
                                 memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
                                 memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                                memb2.damageTaken(memb.damage)
                                 memb.health -= memb2.damage
                                 memb2.health -= memb.damage
                                 memb2.collisionArray.push(memb)
                         }
+                    }
+                }
+            })
+        })
+        qt.collisions.forEach((col) => {
+            col.forEach((memb) => {
+                for (let i = 0; i < col.length; i++) {
+                    let memb2 = col[i]
+                    if (memb != memb2) {
+                        if (memb.type == "bullet" && memb2.type == "bot") {
+                            let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                            if (memb.host.team != memb2.team) {
+                                memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
+                                memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                                memb.health -= memb2.bodyDamage
+                                memb2.health -= memb.damage
+                                memb2.collisionArray.push(memb)
+                            }
+                        }
+                        if (memb.type == "bullet" && memb2.type == "player") {
+                            let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                            if (memb.host.team != memb2.team) {
+                                memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
+                                memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                                memb.health -= memb2.bodyDamage
+                                memb2.health -= memb.damage
+                                memb2.collisionArray.push(memb)
+                            }
+                        }
+                        if (memb.type == "bot" && memb2.type == "bot") {
+                            let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                            memb2.velX += (0.1 * Math.cos(angle))/(memb2.size/10)
+                            memb2.velY += (0.1 * Math.sin(angle))/(memb2.size/10)
+                            memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
+                            memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                            if (memb.team != memb2.team) {
+                                memb.health -= memb2.bodyDamage
+                                memb2.health -= memb.bodyDamage
+                                memb.collisionArray.push(memb2)
+                                memb2.collisionArray.push(memb)
+                            }
+                    }
+                    if (memb.type == "bot" && memb2.type == "player") {
+                            let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
+                            memb2.velX += (0.1 * Math.cos(angle))/(memb2.size/10)
+                            memb2.velY += (0.1 * Math.sin(angle))/(memb2.size/10)
+                            memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
+                            memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                            if (memb.team != memb2.team) {
+                                memb.health -= memb2.bodyDamage
+                                memb2.health -= memb.bodyDamage
+                                memb.collisionArray.push(memb2)
+                                memb2.collisionArray.push(memb)
+                            }
+                    }
                     }
                 }
             })
@@ -339,8 +457,10 @@ function makeGrid(cellSize, camera) {
     ctx.fillRect(mapSizeX-camera.x,-mapSizeY/2-camera.y, mapSizeX, mapSizeY+mapSizeY/2)
     ctx.closePath()
 }
+
 qt.insert(player)
 let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX)
+mini.zones.push(teamZones)
 function render() {
     globalStuff = globalPolygons.concat(bullets.concat(player)).concat(globalBots)
     canvas.width = window.innerWidth
@@ -349,30 +469,45 @@ function render() {
     updateCamera(player)
     makeGrid(20, camera)
     
-    globalPolygons.forEach((poly) => {
-        poly.draw()
-    })
-    shocks.forEach((shock) => {
-        shock.draw()
-    })
-    bullets.forEach((bul) => {
-        bul.draw()
-    })
-    particles.forEach((part) => {
-        part.draw()
+    teamZones.forEach((z) => {
+        z.draw()
     })
     globalStuff.forEach((b) => {
-        if (b.type == "bot") {
+        b.canDraw = true
+        if (b.canDraw) {
             b.draw()
         }
     })
-    player.draw()
+    // globalStuff.forEach((p) => {
+    //     if (p.x < 0-camera.width/2) {
+    //         p.canDraw = false
+    //     } else {
+    //         p.canDraw = true
+    //     }
+    //     if (p.y > camera.width+camera.width/2) {
+    //         p.canDraw = false
+    //     } else {
+    //         p.canDraw = true
+    //     }
+        
+    //     if (p.x > camera.width+camera.width/2) {
+    //         p.canDraw = false
+    //     } else {
+    //         p.canDraw = true
+    //     }
+    //     if (p.y < 0-camera.height/2) {
+    //         p.canDraw = false
+    //     } else {
+    //         p.canDraw = true
+    //     }
+    // })
     player.faceMouse()
     
     
     mini.x = 10
     mini.y = 10
     mini.entities = globalStuff
+    mini.zones = teamZones
     mini.draw()
     // qt.draw(ctx, camera)
     killNotifs.forEach((notif) => {

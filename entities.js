@@ -1,7 +1,21 @@
 import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber, particles, getRadiantColor, mapSizeX, player  } from "./main.js"
 import {degToRads} from "./miscellaneous.js"
 
+export function extractRGB(rgb) {
+    if (typeof rgb !== "string") {
+        console.error("Invalid input to darkenRGB:", rgb);
+        return "rgb(0, 0, 0)";
+    }
 
+    
+    let [r, g, b] = rgb.match(/\d+/g).map(Number)
+
+    return {
+        r: r, 
+        g: g,
+        b: b
+    };
+}
 
 export class RadiantParticle {
     constructor(x, y, velX, velY, lifetime, host) {
@@ -131,11 +145,14 @@ export class Polygon {
         this.velY = 0.95 / Math.pow(1.6, (sides-3))
         this.size = 10 * Math.pow(1.55, (sides-3))
         this.actualSides = sides
+        this.damaged = false
+        this.dmgTick = 1
         this.sides = this.misshapen ? (sides == 3) ? 3 + 1 + Math.ceil(Math.random() * 10) : sides -1+(Math.ceil(Math.random()*6)) : sides;
         let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
+        this.actualColor = polygonColors[index]
         this.color = polygonColors[index];
         this.radiantMode = 0
-        this.damage = 1 * Math.pow(1.01, sides-3)
+        this.damage = 0.4 * Math.pow(1.01, sides-3)
         this.border = darkenRGB(this.color, 20);
         this.mean = null
         this.amplitude = null        
@@ -147,6 +164,29 @@ export class Polygon {
         this.ranG = Math.ceil(Math.random()*255)
         this.ranB = Math.ceil(Math.random()*255)
         this.randomColor = `rgb(${this.ranR}, ${this.ranG}, ${this.ranB})`
+    }
+    colorBlend(percent) {
+        let color
+        if (this.radiant > 0) {
+            color = extractRGB(getRadiantColor(this.time))
+        } else {
+            color = extractRGB(this.color)
+        }
+        let white = { r: 255, g: 0, b: 0 }
+        let n = {
+            r: Math.round((1 - percent) * color.r + percent*white.r),
+            g: Math.round((1 - percent) * color.g + percent*white.g),
+            b: Math.round((1 - percent) * color.b + percent*white.b)
+        }
+
+        return `rgb(${n.r}, ${n.g}, ${n.b})`
+    }
+    damageTaken(damage) {
+        let percent = (damage)/this.maxHealth
+        let blend = (damage*(100*percent))/(this.maxHealth*percent)
+        this.color = this.colorBlend(blend)
+        this.border = darkenRGB(this.color, 15)
+        this.damaged = true
     }
     borderCheck() {
         if (this.x > mapSizeX) {
@@ -268,6 +308,14 @@ export class Polygon {
         }
     }
     move() {
+        if (this.damaged) {
+            this.dmgTick--
+            if (this.dmgTick <= 0) {
+                this.dmgTick = 7
+                this.color = this.actualColor
+                this.border = darkenRGB(this.color, 20);
+            }
+        }
         this.angle += 0.05/this.size
 
         this.x += this.pushX
@@ -472,6 +520,7 @@ export class Player {
         this.xp = 0
         this.team = 1
         this.holdMouse = false
+        this.autoFire = false
         this.xpToNext = 100
         this.level = 1
         this.type = "player"
@@ -484,20 +533,20 @@ export class Player {
         this.guns = [
             new Barrel(0, 0, 20, 8, this, {
                 reload: 15,
-                damage: 40,
+                damage: 5,
                 offsetX: 0,
                 offsetY: -5,
                 bulletSpeed: 1.5,
-                bulletHealth: 25,
+                bulletHealth: 15,
                 angleOffset: 0
             }),
             new Barrel(0, 0, 20, 8, this, {
                 reload: 15,
-                damage: 40,
+                damage: 5,
                 offsetX: 0,
                 offsetY: 5,
                 bulletSpeed: 1.5,
-                bulletHealth: 25,
+                bulletHealth: 15,
                 angleOffset: 0,
                 delay: 0.5
             })
@@ -621,6 +670,10 @@ export class Player {
             this.velX += this.speed
         }
 
+        if (this.keys[69]) {
+            this.autoFire = !this.autoFire
+        }
+
         this.x += this.velX;
         this.y += this.velY;
         this.mx += this.velX
@@ -628,22 +681,22 @@ export class Player {
     }
 }
 export class Bot {
-    constructor(x, y, size, color, health, bodyDamage, entities) {
+    constructor(x, y, size, color, health, bodyDamage, team) {
         this.x = x;
         this.y = y;
         this.size = size;
-        this.color = color;
+        this.color = ["rgb(0,0,255)", "rgb(255,0,0)", "rgb(0,255,0)", "rgb(255,0,125)"][team-1];
+        this.border = darkenRGB(this.color, 15)
         this.mx = null
         this.my = null
         this.collisionArray = []
-        this.border = darkenRGB(color, 15)
         this.health = health;
         this.velX = 0
         this.velY = 0
         this.xp = 0
-        this.entities = entities;
+        this.entities = [];
         this.target = null
-        this.team = 1
+        this.team = team
         this.holdMouse = false
         this.xpToNext = 100
         this.level = 1
@@ -654,14 +707,15 @@ export class Bot {
         this.maxHealth = health;
         this.bodyDamage = bodyDamage;
         this.angle = 0;
+        this.diet = []
         this.angleChangeTick = 90
         this.keys = { }
         this.guns = []
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 1; i++) {
             this.guns.push(
                 new Barrel(0, 0, 18, 8, this, {
-                    damage: 15,
-                    bulletHealth: 25,
+                    damage: 5,
+                    bulletHealth: 15,
                     offsetX: 0,
                     offsetY: 0,
                     reload: 15,
@@ -753,6 +807,7 @@ export class Bot {
     }
     move() {
         let possibleTargets = []
+        let possiblePolys = []
         if (!this.target && this.entities.length > 0) {
             this.entities.forEach((e) => {
                 let dx = e.x - this.x
@@ -763,14 +818,30 @@ export class Bot {
                 }
             })
         }
-        if (possibleTargets && this.target == null) {
-            possibleTargets.sort((a, b) => (b.xp - a.xp))
-            possibleTargets.forEach((p) => {
-                if (p.type === "player" || p.type === "bot") {}
+        if (this.target == null) {
+            this.diet.forEach((poly) => {
+                let dx = poly.x - this.x
+                let dy = poly.y - this.y
+                let dist = dx*dx+dy*dy
+                if (dist < Math.pow(this.range+poly.size, 2)) {
+                    possiblePolys.push(poly)
+                }
             })
-            this.target = possibleTargets[0]
+        }
+        if (this.target == null) {
+            possiblePolys.sort((a, b) => b.xp - a.xp)
+            this.target = possiblePolys[0]
         }
 
+        if (possibleTargets && this.target == null) {
+            possibleTargets.forEach((p) => {
+                if (p.type === "player" || p.type === "bot" && p !== this) {
+                    if (p.team != this.team) {
+                        this.target = p
+                    }
+                }
+            })
+        }
         if (this.target == null) {
             this.velX += Math.cos(this.angle) * this.speed
             this.velY += Math.sin(this.angle) * this.speed
@@ -785,7 +856,7 @@ export class Bot {
             let dx = this.target.x - this.x
             let dy = this.target.y - this.y
             let dist = dx*dx + dy*dy
-            let r = (this.size*1.8) + this.target.size
+            let r = (this.size*3) + this.target.size
             this.angle = Math.atan2(dy, dx)
             if (dist > r*r) {
                 this.velX += this.speed * Math.cos(this.angle)
@@ -797,5 +868,22 @@ export class Bot {
         }
         this.x += this.velX
         this.y += this.velY
+    }
+}
+
+export class TeamZone {
+    constructor(x, y, w, team, color) {
+        this.x = x
+        this.y = y
+        this.l = w
+        this.team = team;
+        this.color = color;
+    }
+    draw() {
+        ctx.beginPath()
+        ctx.fillStyle = this.color
+        ctx.globalAlpha = 0.6
+        ctx.fillRect(this.x - camera.x, this.y - camera.y, this.l, this.l)
+        ctx.closePath()
     }
 }
