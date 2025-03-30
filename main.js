@@ -171,7 +171,7 @@ document.addEventListener("mouseup", (e) => {
 let maxPolys = 400
 let spawners = []
 for (let i = 0, n = 2; i < n; i++) {
-    spawners.push(new Spawner(0, maxPolys/n, 14, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 15, qt))
+    spawners.push(new Spawner(0, maxPolys/n, 11, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 15, qt))
 }
 function spawnBot(lim) {
     for (let i = 0; i < lim; i++) {

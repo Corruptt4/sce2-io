@@ -159,6 +159,8 @@ export class Polygon {
         this.name = ""
         this.maxSpeed = 0.125
         this.speed = 0.125*Math.pow(1.05 , rad)
+        this.totalDamage = 0
+        this.normDmgTick = 5
         
         this.ranR = Math.ceil(Math.random()*255)
         this.ranG = Math.ceil(Math.random()*255)
@@ -182,11 +184,7 @@ export class Polygon {
         return `rgb(${n.r}, ${n.g}, ${n.b})`
     }
     damageTaken(damage) {
-        let percent = (damage)/this.maxHealth
-        let blend = (damage*(100*percent))/(this.maxHealth*percent)
-        this.color = this.colorBlend(blend)
-        this.border = darkenRGB(this.color, 15)
-        this.damaged = true
+        this.totalDamage += damage
     }
     borderCheck() {
         if (this.x > mapSizeX) {
@@ -308,12 +306,26 @@ export class Polygon {
         }
     }
     move() {
-        if (this.damaged) {
+        if (!this.damaged) {
             this.dmgTick--
-            if (this.dmgTick <= 0) {
-                this.dmgTick = 7
+        }
+        if (this.dmgTick <= 0 && !this.damaged) {
+            this.dmgTick = 7
+            this.damaged = true
+            this.color = this.actualColor
+            this.border = darkenRGB(this.color, 20);
+        }
+        if (this.damaged) {
+            this.normDmgTick--
+            let perc = this.totalDamage/this.maxHealth
+            this.color = this.colorBlend(perc)
+            this.border = darkenRGB(this.color, 15)
+            if (this.normDmgTick <= 0) {
+                this.normDmgTick = 5
+                this.totalDamage = 0
+                this.damaged = false
                 this.color = this.actualColor
-                this.border = darkenRGB(this.color, 20);
+                this.border = darkenRGB(this.color, 15)
             }
         }
         this.angle += 0.05/this.size
@@ -689,6 +701,7 @@ export class Bot {
         this.border = darkenRGB(this.color, 15)
         this.mx = null
         this.my = null
+        this.followTeammatePlayer = false
         this.collisionArray = []
         this.health = health;
         this.velX = 0
@@ -843,12 +856,11 @@ export class Bot {
             })
         }
         if (this.target == null) {
-            this.velX += Math.cos(this.angle) * this.speed
-            this.velY += Math.sin(this.angle) * this.speed
             this.angleChangeTick--
-            if (this.angleChangeTick <= 0) {
+            if (this.angleChangeTick <= 0 && !this.followTeammatePlayer) {
                 this.angleChangeTick = 90
                 this.angle = Math.random() * (Math.PI * 2)
+                
             }
         }
 
@@ -856,15 +868,32 @@ export class Bot {
             let dx = this.target.x - this.x
             let dy = this.target.y - this.y
             let dist = dx*dx + dy*dy
-            let r = (this.size*3) + this.target.size
+            let r = this.followTeammatePlayer ? (this.size*9) + player.size : (this.size*8 + this.target.size*15)
             this.angle = Math.atan2(dy, dx)
-            if (dist > r*r) {
-                this.velX += this.speed * Math.cos(this.angle)
-                this.velY += this.speed * Math.sin(this.angle)
+            let pangle
+            if (this.followTeammatePlayer && player.team == this.team) {
+                let pdx = player.x - this.x
+                let pdy = player.y - this.y
+                pangle = -Math.atan2(pdx, pdy)
             }
-            if (this.target.health <= 0) {
+            if (dist <= r*r) {
+                this.velX += this.speed * Math.cos((this.followTeammatePlayer ? pangle : angle ))
+                this.velY += this.speed * Math.sin((this.followTeammatePlayer ? pangle : angle ))
+            }
+            if (this.target.health <= 0 || dist >= (r*(3*r))) {
                 this.target = null
             }
+        }
+        
+        if (this.followTeammatePlayer && this.team == player.team) {
+            let dx = player.x - this.x
+            let dy = player.y - this.y
+            let angle = Math.atan2(dy, dx)
+            this.velX += Math.cos(angle) * this.speed
+            this.velY += Math.sin(angle) * this.speed
+        } else {
+            this.velX += Math.cos(this.angle) * this.speed
+            this.velY += Math.sin(this.angle) * this.speed
         }
         this.x += this.velX
         this.y += this.velY
