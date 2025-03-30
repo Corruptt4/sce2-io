@@ -216,14 +216,10 @@ setInterval(() => {
             qt.insert(p)
         })
     }
-        globalStuff.forEach((p) => {
-            let index = qt.points.indexOf(p)
-            if (index > -1) {
-                qt.points.splice(index, 1)
-            }
-            qt.insert(p)
-        })
-        qt.groupCollisionCheck()
+    globalStuff.forEach((p) => {
+        qt.insert(p)
+    })
+    qt.groupCollisionCheck()
     globalPolygons.forEach((p)=> {
         p.borderCheck()
     })
@@ -319,9 +315,6 @@ function render() {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    killNotifs.forEach((notif) => {
-        notif.draw()
-    })
     updateCamera(player)
     makeGrid(20, camera)
     
@@ -345,6 +338,10 @@ function render() {
     mini.y = 10
     mini.entities = globalStuff
     mini.draw()
+    
+    killNotifs.forEach((notif) => {
+        notif.draw()
+    })
     requestAnimationFrame(render)
 }
 render()
