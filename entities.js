@@ -1,5 +1,6 @@
 import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber, particles, getRadiantColor, mapSizeX, player  } from "./main.js"
 import {degToRads} from "./miscellaneous.js"
+import { UpgradeButton } from "./tankUpgrades.js";
 
 export function extractRGB(rgb) {
     if (typeof rgb !== "string") {
@@ -187,16 +188,16 @@ export class Polygon {
         this.totalDamage += damage
     }
     borderCheck() {
-        if (this.x > mapSizeX) {
+        if (this.x > mapSizeX-this.size/2) {
             this.pushX -= 2
         }
-        if (this.x < 0-mapSizeX/2) {
+        if (this.x < this.size/2+0-mapSizeX/2) {
             this.pushX += 2
         }
-        if (this.y > mapSizeX) {
+        if (this.y > mapSizeX-this.size/2) {
             this.pushY -= 2
         }
-        if (this.y < 0-mapSizeX/2) {
+        if (this.y < this.size/2+0-mapSizeX/2) {
             this.pushY += 2
         }
     }
@@ -521,6 +522,8 @@ export class Player {
         this.x = x;
         this.y = y;
         this.size = size;
+        this.weaponUpgrades = []
+        this.bodyUpgrades = []
         this.color = color;
         this.mx = null
         this.my = null
@@ -531,36 +534,40 @@ export class Player {
         this.velY = 0
         this.xp = 0
         this.team = 1
+        this.regenTick = 0
+        this.regenMaxTick = 75
+        this.regening = false
         this.holdMouse = false
         this.autoFire = false
         this.xpToNext = 100
+        this.totalXP = 0
         this.level = 1
         this.type = "player"
         this.abilityMaxRadius = 90
         this.speed = 0.8 / (this.size/9)
         this.maxHealth = health;
         this.bodyDamage = bodyDamage;
+
+        this.weaponUpgrade = "Mono"
+        this.bodyUpgrade = "Base"
+
         this.angle = 0;
         this.keys = { }
+        this.upgradeButtons = [
+            new UpgradeButton([], this, true, 0),
+            new UpgradeButton([], this, true, 90),
+            new UpgradeButton([], this, true, 180),
+            new UpgradeButton([], this, true, 270)
+        ]
         this.guns = [
-            new Barrel(0, 0, 20, 8, this, {
+            new Barrel(0, 0, 18, 8, this, {
                 reload: 15,
                 damage: 5,
                 offsetX: 0,
-                offsetY: -5,
+                offsetY: 0,
                 bulletSpeed: 1.5,
                 bulletHealth: 15,
                 angleOffset: 0
-            }),
-            new Barrel(0, 0, 20, 8, this, {
-                reload: 15,
-                damage: 5,
-                offsetX: 0,
-                offsetY: 5,
-                bulletSpeed: 1.5,
-                bulletHealth: 15,
-                angleOffset: 0,
-                delay: 0.5
             })
         ]
     }
@@ -642,6 +649,15 @@ export class Player {
             this.angle = angle
         }
     }
+    define(tank) {
+        if (tank.isWeapon) {
+            this.guns = tank.guns
+            this.weaponUpgrades = tank.weaponUpgrades
+        } else if (tank.isBody) {
+            this.guns = tank.guns
+            this.bodyUpgrades = tank.turrets
+        }
+    }
     move() {
 
         /** KEY CODES
@@ -696,11 +712,15 @@ export class Bot {
     constructor(x, y, size, color, health, bodyDamage, team) {
         this.x = x;
         this.y = y;
+        this.weaponUpgrades = []
+        this.bodyUpgrades = []
         this.size = size;
-        this.color = ["rgb(0,0,255)", "rgb(255,0,0)", "rgb(0,255,0)", "rgb(255,0,125)"][team-1];
+        this.color = color;
         this.border = darkenRGB(this.color, 15)
         this.mx = null
         this.my = null
+        this.weaponUpgrade = "Mono"
+        this.bodyUpgrade = "Base"
         this.followTeammatePlayer = false
         this.collisionArray = []
         this.health = health;
@@ -712,6 +732,7 @@ export class Bot {
         this.team = team
         this.holdMouse = false
         this.xpToNext = 100
+        this.totalXP = 0
         this.level = 1
         this.type = "bot"
         this.abilityMaxRadius = 90

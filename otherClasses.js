@@ -1,4 +1,4 @@
-import { ctx, killNotifs } from "./main.js"
+import { ctx, killNotifs, globalBots, player } from "./main.js"
 export class Minimap {
     constructor(x, y, width, world) {
         this.x = x;
@@ -38,10 +38,10 @@ export class Minimap {
         this.zones.forEach((e) => {
             ctx.beginPath()
             ctx.globalAlpha = 0.5
-            ctx.fillStyle = e.color
+            ctx.fillStyle = "rgb(255, 0, 0)"
             ctx.fillRect(
-                this.x+this.sideLength/2+e.x*this.scaleDown,
-                this.y+this.sideLength/2+e.y*this.scaleDown,
+                e.x*this.scaleDown,
+                e.y*this.scaleDown,
                 this.l*this.scaleDown,
                 this.l*this.scaleDown,
             )
@@ -79,3 +79,82 @@ export class KillNotif {
         }
     }
 }
+
+export class Leaderboard {
+    constructor(x, y, entries) {
+        this.x = x;
+        this.y = y;
+        this.entries = entries;
+        this.tanks = [];
+        this.ranks = [];
+    }
+
+    update() {
+        this.tanks = globalBots.concat(player)
+        this.tanks.sort((a, b) => b.totalXP - a.totalXP);
+        this.ranks = this.tanks.slice(0, 10).map(tank => [tank.color, tank.totalXP]);
+
+        while (this.ranks.length < 10) {
+            this.ranks.push(["grey", 0, "entry", "???", "???"]);
+        } 
+        for (let i = 0; i < 10; i++) {
+            let tank = this.tanks[i] || { 
+                color: "grey",
+                totalXP: 0,
+                type: "entry",
+                wepUpg: tank.weaponUpgrade,
+                bodUpg: tank.bodyUpgrade
+            };
+            this.ranks[i][0] = tank.color
+            this.ranks[i][1] = tank.totalXP
+            this.ranks[i][2] = tank.type
+            this.ranks[i][3] = tank.weaponUpgrade
+            this.ranks[i][4] = tank.bodyUpgrade
+            this.ranks.splice(11, this.tanks.length)
+        }
+    }
+
+    draw() {
+        ctx.globalAlpha = 1
+        for (let i = 0; i < this.ranks.length; i++) {
+            let barWidth = Math.max(20, (200 * this.ranks[i][1]) / (this.ranks[0][1]+1));
+
+            ctx.beginPath();
+            ctx.fillStyle = "black";
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 1;
+            ctx.roundRect(this.x, this.y + 20 * (i + 1), 200, 15, 15);
+            ctx.fill();
+            ctx.closePath();
+
+            ctx.beginPath();
+            ctx.fillStyle = this.ranks[i][0];
+            ctx.roundRect(this.x, this.y + 20 * (i + 1), barWidth, 15, 15);
+            ctx.fill();
+
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.font = "10px sans-serif";
+            ctx.stroke();
+            ctx.lineWidth = 6
+            ctx.lineJoin = "round"
+            ctx.strokeText(this.ranks[i][1].toFixed(0), this.x + 100, this.y + 10 + 20 * (i + 1))
+            ctx.fillText(this.ranks[i][1].toFixed(0), this.x + 100, this.y + 10 + 20 * (i + 1));
+            ctx.strokeText("Top " + (i+1), this.x - 20, this.y + 10 + 20 * (i + 1))
+            ctx.fillText("Top " + (i+1), this.x - 20, this.y + 10 + 20 * (i + 1));
+            
+            ctx.strokeText(this.ranks[i][3] + "-" + this.ranks[i][4], this.x + 25, this.y + 10 + 20 * (i + 1))
+            ctx.fillText(this.ranks[i][3] + "-" + this.ranks[i][4], this.x + 25, this.y + 10 + 20 * (i + 1));
+            ctx.closePath();
+        }
+        
+        ctx.beginPath()
+        ctx.fillStyle = "white"
+        ctx.strokeStyle = "black"
+        ctx.textAlign = "center";
+        ctx.font = "20px sans-serif";
+        ctx.fillText("LEADERBOARD", this.x, this.y)
+        ctx.closePath()
+    }
+}
+

@@ -24,10 +24,10 @@ import { updateCamera } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
 import { Polygon, Player, Bot, TeamZone } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
-import { KillNotif, Minimap } from "./otherClasses.js"
+import { KillNotif, Minimap, Leaderboard } from "./otherClasses.js"
 let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
 let qt = new QuadTree(boundary, 8)
-
+let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
 export var camera = {
     x: 0,
     y: 0,
@@ -100,7 +100,7 @@ export function darkenRGB(rgb, darken) {
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
-var globalBotCount = 80
+var globalBotCount = 90
 var botCount = 0
 
 export var polygonColors = [
@@ -121,7 +121,7 @@ export var teamColors = [
     "rgb(0, 0, 255)",
     "rgb(255, 0, 0)",
     "rgb(0, 255, 0)",
-    "rgb(255, 0, 125)"
+    "rgb(155, 0, 255)"
 ]
 export var teamZones = [
     new TeamZone(-mapSizeX/2, -mapSizeX/2, 600, 1, teamColors[0]),
@@ -182,7 +182,7 @@ function spawnBot(lim) {
             teamZone.x + Math.random()*teamZone.l,  
             teamZone.y + Math.random()*teamZone.l, 
             20, 
-            "rgb(0,255,0)", 
+            teamZone.color, 
             800, 
             5, 
             team
@@ -212,12 +212,15 @@ setInterval(() => {
                 if (ins) {
                     if (ins.type == "bullet") {
                         ins.host.xp += b.xp / b.collisionArray.length
+                        ins.host.totalXP += b.totalXP / b.collisionArray.length
                     }
                     if (ins.type == "bot") {
                         ins.xp += b.xp / b.collisionArray.length
+                        ins.totalXP += b.totalXP / b.collisionArray.length
                     }
                     if (ins.type == "player") {
                         ins.xp += b.xp / b.collisionArray.length
+                        ins.totalXP += b.totalXP / b.collisionArray.length
                     }
                     if (ins.type == "polygon") {
                         ins.xp += b.xp / b.collisionArray.length
@@ -232,12 +235,14 @@ setInterval(() => {
         poly.pushX *= frictionFactor
         poly.pushY *= frictionFactor
         if (poly.health <= 0) {
-            poly.collisionArray.forEach((p) => {
-                if (p) {
-                    if (p.type === "bullet") {
-                        p.host.xp += poly.xp/poly.collisionArray.length
+            poly.collisionArray.forEach((ins) => {
+                if (ins) {
+                    if (ins.type === "bullet") {
+                        ins.host.xp += poly.xp / poly.collisionArray.length
+                        ins.host.totalXP += poly.xp / poly.collisionArray.length
                     } else {
-                        p.xp += poly.xp/poly.collisionArray.length
+                        ins.xp += poly.xp / poly.collisionArray.length
+                        ins.totalXP += poly.xp / poly.collisionArray.length
                     }
                 }
             })
@@ -423,6 +428,7 @@ setInterval(() => {
         })
     }
     player.borderCheck()
+    leaderboard.update()
 },1000/60)
 // setInterval(() => {
 //     globalPolygons.forEach((pol) => {
@@ -462,6 +468,11 @@ qt.insert(player)
 let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX)
 mini.zones.push(teamZones)
 function render() {
+    globalBots.concat(player).forEach((p) => {
+        if (!leaderboard.tanks.includes(p)) {
+            leaderboard.tanks.push(p)
+        }
+    })
     globalStuff = globalPolygons.concat(bullets.concat(player)).concat(globalBots)
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
@@ -502,6 +513,9 @@ function render() {
     //     }
     // })
     player.faceMouse()
+    player.upgradeButtons.forEach((upg) => {
+        upg.draw()
+    })
     
     
     mini.x = 10
@@ -509,6 +523,8 @@ function render() {
     mini.entities = globalStuff
     mini.zones = teamZones
     mini.draw()
+    leaderboard.x = window.innerWidth/1.13
+    leaderboard.draw()
     // qt.draw(ctx, camera)
     killNotifs.forEach((notif) => {
         notif.draw()
