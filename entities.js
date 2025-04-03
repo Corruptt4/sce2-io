@@ -1,6 +1,6 @@
 import { darkenRGB, ctx, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber, particles, getRadiantColor, mapSizeX, player  } from "./main.js"
 import {degToRads} from "./miscellaneous.js"
-import { UpgradeButton } from "./tankUpgrades.js";
+import { UpgradeButton, Mono } from "./tankUpgrades.js";
 
 export function extractRGB(rgb) {
     if (typeof rgb !== "string") {
@@ -161,7 +161,7 @@ export class Polygon {
         this.maxSpeed = 0.125
         this.speed = 0.125*Math.pow(1.05 , rad)
         this.totalDamage = 0
-        this.normDmgTick = 5
+        this.normDmgTick = 3
         
         this.ranR = Math.ceil(Math.random()*255)
         this.ranG = Math.ceil(Math.random()*255)
@@ -553,23 +553,25 @@ export class Player {
 
         this.angle = 0;
         this.keys = { }
+        this.tier = 0
         this.upgradeButtons = [
-            new UpgradeButton([], this, true, 0),
-            new UpgradeButton([], this, true, 90),
-            new UpgradeButton([], this, true, 180),
-            new UpgradeButton([], this, true, 270)
+            new UpgradeButton(12, Mono, this, true, 0, 2),
         ]
-        this.guns = [
-            new Barrel(0, 0, 18, 8, this, {
-                reload: 15,
-                damage: 5,
-                offsetX: 0,
-                offsetY: 0,
-                bulletSpeed: 1.5,
-                bulletHealth: 15,
-                angleOffset: 0
-            })
-        ]
+        this.guns = []
+        for (let i = 0; i < 5; i++) {
+            this.guns.push(
+                new Barrel(0, 0, [16, 16, 18, 18, 20][i], 8, this, {
+                    reload: 20,
+                    damage: 6,
+                    bulletHealth: 30,
+                    angleOffset: [40, -40, 20, -20, 0][i],
+                    offsetY: [2, -2, 1, -1, 0][i],
+                    offsetX: 0,
+                    delay: [0.667, 0.667, 0.333, 0.333, 0][i],
+                    bulletSpeed: 1.6
+                })
+            )
+        }
     }
     
     borderCheck() {
@@ -745,17 +747,17 @@ export class Bot {
         this.angleChangeTick = 90
         this.keys = { }
         this.guns = []
-        for (let i = 0; i < 1; i++) {
+        for (let i = 0; i < 3; i++) {
             this.guns.push(
-                new Barrel(0, 0, 18, 8, this, {
-                    damage: 5,
-                    bulletHealth: 15,
+                new Barrel(0, 0, [16, 16, 18][i], 8, this, {
+                    reload: 20,
+                    damage: 6,
+                    bulletHealth: 30,
+                    angleOffset: [20, -20, 0][i],
+                    offsetY: [2, -2, 0][i],
                     offsetX: 0,
-                    offsetY: 0,
-                    reload: 15,
-                    bulletSpeed: 1.5,
-                    angleOffset: (360/3)*i,
-                    delay: 0
+                    delay: [0.5, 0.5, 0][i],
+                    bulletSpeed: 1.6
                 })
             )
         }
@@ -898,8 +900,8 @@ export class Bot {
                 pangle = -Math.atan2(pdx, pdy)
             }
             if (dist <= r*r) {
-                this.velX += this.speed * Math.cos((this.followTeammatePlayer ? pangle : this.angle ))
-                this.velY += this.speed * Math.sin((this.followTeammatePlayer ? pangle : this.angle ))
+                this.velX += this.speed * Math.cos(((this.followTeammatePlayer && player.team === this.team) ? pangle : this.angle ))
+                this.velY += this.speed * Math.sin(((this.followTeammatePlayer && player.team === this.team) ? pangle : this.angle ))
             }
             if (this.target.health <= 0 || dist >= (r*(3*r))) {
                 this.target = null

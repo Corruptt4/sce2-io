@@ -102,8 +102,8 @@ export class Leaderboard {
                 color: "grey",
                 totalXP: 0,
                 type: "entry",
-                wepUpg: tank.weaponUpgrade,
-                bodUpg: tank.bodyUpgrade
+                wepUpg: "???",
+                bodUpg: "???"
             };
             this.ranks[i][0] = tank.color
             this.ranks[i][1] = tank.totalXP

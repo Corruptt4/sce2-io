@@ -26,7 +26,7 @@ import { Polygon, Player, Bot, TeamZone } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
 import { KillNotif, Minimap, Leaderboard } from "./otherClasses.js"
 let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
-let qt = new QuadTree(boundary, 8)
+let qt = new QuadTree(boundary, 16)
 let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
 export var camera = {
     x: 0,
@@ -514,7 +514,9 @@ function render() {
     // })
     player.faceMouse()
     player.upgradeButtons.forEach((upg) => {
-        upg.draw()
+        if (player.level >= upg.levelRequirement && player.tier == upg.tier) {
+            upg.draw()
+        }
     })
     
     
