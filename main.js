@@ -14,7 +14,7 @@ export let player = null
 ,     shocks = []
 ,     bullets = []
 ,     particles = []
-,     mapSizeX = 3000
+,     mapSizeX = 15000
 ,     mapSizeY = mapSizeX
 ,     miniWidth = 350
 ,     miniHeight = 350
@@ -175,12 +175,11 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-globalPolygons.push(new Polygon(0, 0, 10, polygonColors, 10))
 let maxPolys = 400
 let spawners = []
-// for (let i = 0, n = 2; i < n; i++) {
-//     spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 3, qt))
-// }
+for (let i = 0, n = 2; i < n; i++) {
+    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 3, qt))
+}
 function spawnBot(lim) {
     for (let i = 0; i < lim; i++) {
         botCount++
@@ -207,11 +206,11 @@ setInterval(()=>{
         s.spawnLoop()
     })
 },100)
-// setInterval(() => {
-//     if (botCount <= globalBotCount) {
-//         spawnBot(1)
-//     }
-// }, 200)
+setInterval(() => {
+    if (botCount <= globalBotCount) {
+        spawnBot(1)
+    }
+}, 200)
 setInterval(() => {
     globalBots.forEach((b) => {
         if (b.health <= 0) {
@@ -323,6 +322,9 @@ setInterval(() => {
     blackOut.luminants = []
     globalBots.forEach((bot) => {
         blackOut.luminants.push(bot)
+    })
+    bullets.forEach((bul) => {
+        blackOut.luminants.push(bul)
     })
     globalPolygons.forEach((poly) => {
         blackOut.luminants.push(poly)
