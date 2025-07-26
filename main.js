@@ -1,6 +1,9 @@
 export const canvas = document.getElementById("c")
         ,   ctx = canvas.getContext("2d")
 
+export const canvas2 = document.getElementById("c2")
+        ,   ctx2 = canvas.getContext("2d", {alpha: true})
+
 export let globalPolygons = []
         ,   globalBots = []
 
@@ -22,11 +25,12 @@ export let globalStuff = globalPolygons.concat(bullets.concat(player).concat(glo
 
 import { updateCamera } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
-import { Polygon, Player, Bot, TeamZone } from "./entities.js"
+import { Polygon, Player, Bot, TeamZone, BlackOut } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
 import { KillNotif, Minimap, Leaderboard } from "./otherClasses.js"
 let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
 let qt = new QuadTree(boundary, 16)
+let blackOut = new BlackOut(mapSizeX, mapSizeY)
 let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
 export var camera = {
     x: 0,
@@ -100,6 +104,9 @@ export function darkenRGB(rgb, darken) {
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
+canvas2.width = window.innerWidth
+canvas2.height = window.innerHeight
+
 var globalBotCount = 90
 var botCount = 0
 
@@ -168,7 +175,7 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-globalPolygons.push(new Polygon(0, 0, 13, polygonColors, 4))
+globalPolygons.push(new Polygon(0, 0, 10, polygonColors, 10))
 let maxPolys = 400
 let spawners = []
 // for (let i = 0, n = 2; i < n; i++) {
@@ -313,7 +320,15 @@ setInterval(() => {
     player.velY *= frictionFactor
 },1000/60)
 setInterval(() => {
-    
+    blackOut.luminants = []
+    globalBots.forEach((bot) => {
+        blackOut.luminants.push(bot)
+    })
+    globalPolygons.forEach((poly) => {
+        blackOut.luminants.push(poly)
+    })
+    blackOut.luminants.push(player)
+
    globalBots.forEach((b) => {
         b.entities = globalStuff
         b.diet = globalPolygons
@@ -430,6 +445,7 @@ setInterval(() => {
     }
     player.borderCheck()
     leaderboard.update()
+    blackOut.update()
 },1000/60)
 // setInterval(() => {
 //     globalPolygons.forEach((pol) => {
@@ -490,29 +506,7 @@ function render() {
             b.draw()
         }
     })
-    // globalStuff.forEach((p) => {
-    //     if (p.x < 0-camera.width/2) {
-    //         p.canDraw = false
-    //     } else {
-    //         p.canDraw = true
-    //     }
-    //     if (p.y > camera.width+camera.width/2) {
-    //         p.canDraw = false
-    //     } else {
-    //         p.canDraw = true
-    //     }
-        
-    //     if (p.x > camera.width+camera.width/2) {
-    //         p.canDraw = false
-    //     } else {
-    //         p.canDraw = true
-    //     }
-    //     if (p.y < 0-camera.height/2) {
-    //         p.canDraw = false
-    //     } else {
-    //         p.canDraw = true
-    //     }
-    // })
+    blackOut.draw(ctx)
     player.faceMouse()
     player.upgradeButtons.forEach((upg) => {
         if (player.level >= upg.levelRequirement && player.tier == upg.tier) {
