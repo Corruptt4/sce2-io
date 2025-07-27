@@ -447,6 +447,7 @@ export class Bullet {
         this.health = health
         this.despawnTick = 155
         this.damage = damage
+        this.team = host.team
         this.isBomb = false
     }
     draw() {
@@ -587,23 +588,26 @@ export class Barrel {
         }
     }
 }
-export class Player {
-    constructor(x, y, size, color, health, bodyDamage) {
+export class Tank {
+    constructor(x, y, size, color, health, bodyDamage, team, isPlayer) {
         this.x = x;
         this.y = y;
         this.size = size;
+        this.isPlayer = isPlayer;
         this.weaponUpgrades = []
         this.bodyUpgrades = []
         this.color = color;
         this.mx = null
         this.my = null
+        this.diet = []
+        this.entities = []
         this.collisionArray = []
         this.border = darkenRGB(color, 15)
         this.health = health;
         this.velX = 0
         this.velY = 0
         this.xp = 0
-        this.team = 1;
+        this.team = team;
         this.shape = 0;
         this.regenTick = 0
         this.regenMaxTick = 75
@@ -612,12 +616,16 @@ export class Player {
         this.autoFire = false
         this.xpToNext = 100
         this.totalXP = 0
+        this.followTeammatePlayer = false;
         this.level = 1
         this.type = "player"
         this.abilityMaxRadius = 90
         this.speed = 0.8 / (this.size/9)
+        this.range = this.size*10
         this.maxHealth = health;
         this.bodyDamage = bodyDamage;
+        this.target = null
+        this.angleChangeTick = 90
 
         this.weaponUpgrade = "Mono"
         this.bodyUpgrade = "Base"
@@ -745,253 +753,122 @@ export class Player {
          * arrowRight -- 39
          */
 
-        if (this.keys[87] && !this.keys[38]) {
-            this.velY -= this.speed
-        }
-        if (this.keys[83] && !this.keys[40]) {
-            this.velY += this.speed
-        }
-        if (this.keys[65] && !this.keys[37]) {
-            this.velX -= this.speed
-        }
-        if (this.keys[68] && !this.keys[39]) {
-            this.velX += this.speed
-        }
-        
-        if (this.keys[38] && !this.keys[87]) {
-            this.velY -= this.speed
-        }
-        if (this.keys[40] && !this.keys[83]) {
-            this.velY += this.speed
-        }
-        if (this.keys[37] && !this.keys[65]) {
-            this.velX -= this.speed
-        }
-        if (this.keys[39] && !this.keys[68]) {
-            this.velX += this.speed
+        if (this.isPlayer > 0) {
+            if (this.keys[87] && !this.keys[38]) {
+                this.velY -= this.speed
+            }
+            if (this.keys[83] && !this.keys[40]) {
+                this.velY += this.speed
+            }
+            if (this.keys[65] && !this.keys[37]) {
+                this.velX -= this.speed
+            }
+            if (this.keys[68] && !this.keys[39]) {
+                this.velX += this.speed
+            }
+            
+            if (this.keys[38] && !this.keys[87]) {
+                this.velY -= this.speed
+            }
+            if (this.keys[40] && !this.keys[83]) {
+                this.velY += this.speed
+            }
+            if (this.keys[37] && !this.keys[65]) {
+                this.velX -= this.speed
+            }
+            if (this.keys[39] && !this.keys[68]) {
+                this.velX += this.speed
+            }
+
+            if (this.keys[69]) {
+                this.autoFire = !this.autoFire
+            }
         }
 
-        if (this.keys[69]) {
-            this.autoFire = !this.autoFire
+        if (this.isPlayer <= 0) {
+            console.log("Bot movement")
+            let possibleTargets = []
+            let possiblePolys = []
+            if (!this.target && this.entities.length > 0) {
+                this.entities.forEach((e) => {
+                    let dx = e.x - this.x
+                    let dy = e.y - this.y
+                    let dist = dx*dx+dy*dy
+                    if (dist < Math.pow((this.range+e.size), 2)) {
+                        possibleTargets.push(e)
+                    }
+                })
+            }
+            if (this.target == null) {
+                this.diet.forEach((poly) => {
+                    let dx = poly.x - this.x
+                    let dy = poly.y - this.y
+                    let dist = dx*dx+dy*dy
+                    if (dist < Math.pow(this.range+poly.size, 2)) {
+                        possiblePolys.push(poly)
+                    }
+                })
+            }
+            if (this.target == null) {
+                possiblePolys.sort((a, b) => b.xp - a.xp)
+                this.target = possiblePolys[0]
+            }
+
+            if (possibleTargets && this.target == null) {
+                possibleTargets.forEach((p) => {
+                    if (p.type === "player" || p.type === "bot" && p !== this) {
+                        if (p.team != this.team) {
+                            this.target = p
+                        }
+                    }
+                })
+            }
+            if (this.target == null) {
+                this.angleChangeTick--
+                if (this.angleChangeTick <= 0 && !this.followTeammatePlayer) {
+                    this.angleChangeTick = 90
+                    this.angle = Math.random() * (Math.PI * 2)
+                    
+                }
+            }
+
+            if (this.target) {
+                let dx = this.target.x - this.x
+                let dy = this.target.y - this.y
+                let dist = dx*dx + dy*dy
+                let r = this.followTeammatePlayer ? (this.size*9) + player.size : (this.size*8 + this.target.size*15)
+                this.angle = Math.atan2(dy, dx)
+                let pangle
+                if (this.followTeammatePlayer && player.team == this.team) {
+                    let pdx = player.x - this.x
+                    let pdy = player.y - this.y
+                    pangle = -Math.atan2(pdx, pdy)
+                }
+                if (dist <= r*r) {
+                    this.velX += this.speed * Math.cos(((this.followTeammatePlayer && player.team === this.team) ? pangle : this.angle ))
+                    this.velY += this.speed * Math.sin(((this.followTeammatePlayer && player.team === this.team) ? pangle : this.angle ))
+                }
+                if (this.target.health <= 0 || dist >= (r*(3*r))) {
+                    this.target = null
+                }
+            }
+            
+            if (this.followTeammatePlayer && this.team == player.team) {
+                let dx = player.x - this.x
+                let dy = player.y - this.y
+                let angle = Math.atan2(dy, dx)
+                this.velX += Math.cos(angle) * this.speed
+                this.velY += Math.sin(angle) * this.speed
+            } else if (!this.target && !this.followTeammatePlayer) {
+                this.velX += Math.cos(this.angle) * this.speed
+                this.velY += Math.sin(this.angle) * this.speed
+            }
         }
 
         this.x += this.velX;
         this.y += this.velY;
         this.mx += this.velX
         this.my += this.velY
-    }
-}
-export class Bot {
-    constructor(x, y, size, color, health, bodyDamage, team) {
-        this.x = x;
-        this.y = y;
-        this.weaponUpgrades = []
-        this.bodyUpgrades = []
-        this.size = size;
-        this.color = color;
-        this.shape = 0;
-        this.border = darkenRGB(this.color, 15)
-        this.mx = null
-        this.my = null
-        this.weaponUpgrade = "Mono"
-        this.bodyUpgrade = "Base"
-        this.followTeammatePlayer = false
-        this.collisionArray = []
-        this.health = health;
-        this.velX = 0
-        this.velY = 0
-        this.xp = 0
-        this.entities = [];
-        this.target = null
-        this.team = team
-        this.holdMouse = false
-        this.xpToNext = 100
-        this.totalXP = 0
-        this.level = 1
-        this.type = "bot"
-        this.abilityMaxRadius = 90
-        this.speed = 0.8 / (this.size/9)
-        this.range = size*20
-        this.maxHealth = health;
-        this.bodyDamage = bodyDamage;
-        this.angle = 0;
-        this.diet = []
-        this.angleChangeTick = 90
-        this.keys = { }
-        this.guns = []
-        for (let i = 0; i < 3; i++) {
-            this.guns.push(
-                new Barrel(0, 0, [16, 16, 18][i], 8, this, {
-                    reload: 20,
-                    damage: 6,
-                    bulletHealth: 30,
-                    angleOffset: [20, -20, 0][i],
-                    offsetY: [2, -2, 0][i],
-                    offsetX: 0,
-                    delay: [0.5, 0.5, 0][i],
-                    bulletSpeed: 1.6
-                })
-            )
-        }
-    }
-    
-    borderCheck() {
-        if (this.x > mapSizeX) {
-            this.velX -= 2
-        }
-        if (this.x < 0-mapSizeX/2) {
-            this.velX += 2
-        }
-        if (this.y > mapSizeX) {
-            this.velY -= 2
-        }
-        if (this.y < 0-mapSizeX/2) {
-            this.velY += 2
-        }
-    }
-    levelUpCheck() {
-        if (this.xp >= this.xpToNext) {
-            this.level++
-            this.xp -= this.xpToNext
-            this.xpToNext *= 1.2
-            this.size *= 1.005
-            this.maxHealth *= 1.1
-            this.health *= 1.1
-            this.bodyDamage *= 1.1
-            this.range = this.size*20
-        }
-    }
-    draw() {
-        this.guns.forEach((g) => {g.draw()})
-        ctx.save()
-        ctx.beginPath();
-        ctx.translate(this.x-camera.x,this.y-camera.y)
-        ctx.fillStyle = this.color;
-        ctx.strokeStyle = this.border;
-        ctx.rotate(this.angle)
-        ctx.arc(0, 0, this.size, 0, Math.PI * 2, 0)
-        ctx.fill()
-        ctx.lineWidth = 3
-        ctx.stroke()
-        ctx.closePath()
-        ctx.restore()
-
-        ctx.save()
-        ctx.beginPath()
-        ctx.translate(this.x-camera.x, this.y-camera.y)
-        ctx.font = "15px Arial"
-        ctx.textAlign = "center"
-        ctx.fillStyle = this.color;
-        ctx.strokeStyle = this.border;
-        ctx.fillText(abreviatedNumber(this.xp) + "/" + abreviatedNumber(this.xpToNext), 0, -this.size-10, 200)
-        ctx.fillText("Lv." + abreviatedNumber(this.level), 0, -this.size-25, 200)
-        ctx.closePath()
-        ctx.restore()
-
-        if ((this.health/this.maxHealth) < 1) {
-            ctx.beginPath()
-            ctx.fillStyle = darkenRGB(this.color, 15);
-            ctx.lineWidth = 6
-            ctx.strokeStyle = darkenRGB(this.color, 15)
-            ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, this.size*2, 3, 3)
-            ctx.fill()
-            ctx.stroke()        
-            ctx.closePath()
-
-            ctx.beginPath()
-            ctx.fillStyle = this.color
-            ctx.roundRect(this.x - this.size - camera.x, this.y + this.size+7 - camera.y, (this.size*2)*(this.health / this.maxHealth), 3,3)
-            ctx.fill()
-            ctx.closePath()
-        }
-    }
-    faceMouse() {
-        if (this.mx != null && this.my != null) {
-            let dx = this.mx-this.x
-            let dy = this.my-this.y
-            let angle = Math.atan2(dy, dx)
-            this.angle = angle
-        }
-    }
-    move() {
-        let possibleTargets = []
-        let possiblePolys = []
-        if (!this.target && this.entities.length > 0) {
-            this.entities.forEach((e) => {
-                let dx = e.x - this.x
-                let dy = e.y - this.y
-                let dist = dx*dx+dy*dy
-                if (dist < Math.pow((this.range+e.size), 2)) {
-                    possibleTargets.push(e)
-                }
-            })
-        }
-        if (this.target == null) {
-            this.diet.forEach((poly) => {
-                let dx = poly.x - this.x
-                let dy = poly.y - this.y
-                let dist = dx*dx+dy*dy
-                if (dist < Math.pow(this.range+poly.size, 2)) {
-                    possiblePolys.push(poly)
-                }
-            })
-        }
-        if (this.target == null) {
-            possiblePolys.sort((a, b) => b.xp - a.xp)
-            this.target = possiblePolys[0]
-        }
-
-        if (possibleTargets && this.target == null) {
-            possibleTargets.forEach((p) => {
-                if (p.type === "player" || p.type === "bot" && p !== this) {
-                    if (p.team != this.team) {
-                        this.target = p
-                    }
-                }
-            })
-        }
-        if (this.target == null) {
-            this.angleChangeTick--
-            if (this.angleChangeTick <= 0 && !this.followTeammatePlayer) {
-                this.angleChangeTick = 90
-                this.angle = Math.random() * (Math.PI * 2)
-                
-            }
-        }
-
-        if (this.target) {
-            let dx = this.target.x - this.x
-            let dy = this.target.y - this.y
-            let dist = dx*dx + dy*dy
-            let r = this.followTeammatePlayer ? (this.size*9) + player.size : (this.size*8 + this.target.size*15)
-            this.angle = Math.atan2(dy, dx)
-            let pangle
-            if (this.followTeammatePlayer && player.team == this.team) {
-                let pdx = player.x - this.x
-                let pdy = player.y - this.y
-                pangle = -Math.atan2(pdx, pdy)
-            }
-            if (dist <= r*r) {
-                this.velX += this.speed * Math.cos(((this.followTeammatePlayer && player.team === this.team) ? pangle : this.angle ))
-                this.velY += this.speed * Math.sin(((this.followTeammatePlayer && player.team === this.team) ? pangle : this.angle ))
-            }
-            if (this.target.health <= 0 || dist >= (r*(3*r))) {
-                this.target = null
-            }
-        }
-        
-        if (this.followTeammatePlayer && this.team == player.team) {
-            let dx = player.x - this.x
-            let dy = player.y - this.y
-            let angle = Math.atan2(dy, dx)
-            this.velX += Math.cos(angle) * this.speed
-            this.velY += Math.sin(angle) * this.speed
-        } else if (!this.target && !this.followTeammatePlayer) {
-            this.velX += Math.cos(this.angle) * this.speed
-            this.velY += Math.sin(this.angle) * this.speed
-        }
-        this.x += this.velX
-        this.y += this.velY
     }
 }
 

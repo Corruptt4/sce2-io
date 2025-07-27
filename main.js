@@ -25,7 +25,7 @@ export let globalStuff = globalPolygons.concat(bullets.concat(player).concat(glo
 
 import { updateCamera } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
-import { Polygon, Player, Bot, TeamZone, BlackOut } from "./entities.js"
+import { Polygon, TeamZone, BlackOut, Tank } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
 import { KillNotif, Minimap, Leaderboard } from "./otherClasses.js"
 let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
@@ -139,13 +139,15 @@ export var teamZones = [
 let randomTeam = Math.floor(Math.random()*teamColors.length)
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
 let chosenZone = teamZones[randomTeam]
-player = new Player(
+player = new Tank(
     chosenZone.x + Math.random()*chosenZone.l,  
     chosenZone.y + Math.random()*chosenZone.l, 
     20, 
     teamColors[randomTeam], 
     800, 
-    5
+    5,
+    randomTeam,
+    1
 )
 player.team = randomTeam+1
 window.addEventListener("resize", (e) => {
@@ -185,17 +187,20 @@ function spawnBot(lim) {
         botCount++
         let team = 1+Math.floor(Math.random()*4)
         let teamZone = teamZones[team-1]
-        let bot = new Bot(
+        let bot = new Tank(
             teamZone.x + Math.random()*teamZone.l,  
             teamZone.y + Math.random()*teamZone.l, 
             20, 
             teamZone.color, 
             800, 
             5, 
-            team
+            team,
+            -1
         )
         bot.diet = globalPolygons
         bot.entities = globalStuff
+        bot.type = "bot"
+        console.log(bot)
         globalBots.push(bot)
         globalStuff.push(bot)
         qt.insert(bot)
@@ -396,7 +401,7 @@ setInterval(() => {
                     if (memb != memb2) {
                         if (memb.type == "bullet" && memb2.type == "bot") {
                             let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
-                            if (memb.host.team != memb2.team) {
+                            if (memb.team != memb2.team) {
                                 memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
                                 memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
                                 memb.health -= memb2.bodyDamage
@@ -406,7 +411,7 @@ setInterval(() => {
                         }
                         if (memb.type == "bullet" && memb2.type == "player") {
                             let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
-                            if (memb.host.team != memb2.team) {
+                            if (memb.team != memb2.team) {
                                 memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
                                 memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
                                 memb.health -= memb2.bodyDamage
