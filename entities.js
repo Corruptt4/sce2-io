@@ -148,7 +148,7 @@ export class Polygon {
         this.actualSides = sides
         this.damaged = false
         this.dmgTick = 1;
-        this.luminantBoost =  1+1 * Math.pow(1.1, rad);
+        this.luminantBoost =  1 * Math.pow(1.2, rad);
         this.sides = this.misshapen ? (sides == 3) ? 3 + 1 + Math.ceil(Math.random() * 10) : sides -1+(Math.ceil(Math.random()*6)) : sides;
         let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
         this.actualColor = polygonColors[index]
@@ -347,13 +347,12 @@ export class BlackOut {
         this.t = 0;
         this.luminants = [];
 
-        // Create an offscreen canvas for masking
         this.maskCanvas = document.createElement("canvas");
         this.maskCtx = this.maskCanvas.getContext("2d");
     }
 
     update() {
-        this.t += 0.01;
+        this.t += 0.03;
     }
 
     draw(mainCtx) {
@@ -385,15 +384,6 @@ export class BlackOut {
                     Math.PI * 2
                 );
             } else if (shape > 0) {
-                /**
-                 * ctx.moveTo(this.size * Math.cos(0), this.size * Math.sin(0))
-                    for (let i = 0; i < this.sides+1.2; i++) {
-                        ctx.lineTo(
-                            this.size * Math.cos((i * 2 * Math.PI) / this.sides),
-                            this.size * Math.sin((i * 2 * Math.PI) / this.sides),
-                        );
-                    }
-                 */
                 ctx.save()
                 ctx.translate(lum.x-camera.x, lum.y-camera.y)
                 ctx.rotate(lum.angle)
@@ -410,7 +400,6 @@ export class BlackOut {
             ctx.restore();
         });
 
-        // Now apply the mask to the main context
         mainCtx.save();
         mainCtx.globalCompositeOperation = "source-over";
         mainCtx.drawImage(this.maskCanvas, 0, 0);
