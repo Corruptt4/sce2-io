@@ -14,7 +14,7 @@ export let player = null
 ,     shocks = []
 ,     bullets = []
 ,     particles = []
-,     mapSizeX = 15000
+,     mapSizeX = 4000
 ,     mapSizeY = mapSizeX
 ,     miniWidth = 350
 ,     miniHeight = 350
@@ -107,7 +107,7 @@ canvas.height = window.innerHeight
 canvas2.width = window.innerWidth
 canvas2.height = window.innerHeight
 
-var globalBotCount = 90
+var globalBotCount = 20
 var botCount = 0
 
 export var polygonColors = [

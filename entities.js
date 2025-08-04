@@ -148,7 +148,7 @@ export class Polygon {
         this.actualSides = sides
         this.damaged = false
         this.dmgTick = 1;
-        this.luminantBoost =  1 * Math.pow(1.2, rad);
+        this.luminancy =  (rad > 0) ? 1 * Math.pow(1.2, rad) : 0;
         this.sides = this.misshapen ? (sides == 3) ? 3 + 1 + Math.ceil(Math.random() * 10) : sides -1+(Math.ceil(Math.random()*6)) : sides;
         let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
         this.actualColor = polygonColors[index]
@@ -369,7 +369,7 @@ export class BlackOut {
             const ab = (lum.size - lum.size) / 2;
             const bc = (lum.size + lum.size) / 2;
             const extra = ab + bc * Math.sin(this.t);
-            const luminancy = lum.luminancy || 1;
+            const luminancy = lum.luminancy || 0;
             let shape = lum.sides || 0;
 
             ctx.save();
@@ -607,6 +607,7 @@ export class Tank {
         this.velX = 0
         this.velY = 0
         this.xp = 0
+        this.luminancy = 1
         this.team = team;
         this.shape = 0;
         this.regenTick = 0
