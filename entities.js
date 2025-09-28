@@ -132,9 +132,9 @@ export class Polygon {
         this.time = 0;
         this.health = 35 * Math.pow(3.6, sides)
         this.maxHealth = 35 * Math.pow(3.6, sides)
-        this.xp = 2*(Math.pow(5,sides)) * (this.misshapen ? 3 : 1) * ((rad > 0) ? 25*Math.pow(4, rad-1) : 1) * (this.miscolored ? 3 : 1)
-        this.misshapen = Math.random() < 1/65536
-        this.miscolored = Math.random() < 1/65536
+        this.xp = (250 + (1000 * (Math.pow(4, sides-3) - 1))/3) * (this.misshapen ? 3 : 1) * ((rad > 0) ? 25*Math.pow(4, rad-1) : 1) * (this.miscolored ? 3 : 1)
+        this.misshapen = Math.random() < 1/256
+        this.miscolored = Math.random() < 1/256
         this.y = y;
         this.luminousStar = new RadiantStar(x, y, 0.03, 6, 0.4, this, 0.8)
         this.lustrousStar = new RadiantStar(x, y, 0.06, 3, 0.1/(Math.pow(1.08, rad-4)), this, 1.5, true)
@@ -142,9 +142,9 @@ export class Polygon {
         this.pushY = 0
         this.collisionArray = []
         this.type = "polygon"
-        this.velX = 0.95 / Math.pow(1.6, (sides-3))
-        this.velY = 0.95 / Math.pow(1.6, (sides-3))
-        this.size = 10 * Math.pow(1.55, (sides-3))
+        this.velX = Math.pow(0.6, (sides-3))
+        this.velY = Math.pow(0.6, (sides-3))
+        this.size = 10 * Math.pow(1.6, (sides-3))
         this.actualSides = sides
         this.damaged = false
         this.dmgTick = 1;
@@ -346,13 +346,12 @@ export class BlackOut {
         this.mapSizeY = mapSizeY;
         this.t = 0;
         this.luminants = [];
-
         this.maskCanvas = document.createElement("canvas");
         this.maskCtx = this.maskCanvas.getContext("2d");
     }
 
     update() {
-        this.t += 0.03;
+        this.t += 0.02;
     }
 
     draw(mainCtx) {
@@ -673,10 +672,10 @@ export class Tank {
             this.level++
             this.xp -= this.xpToNext
             this.xpToNext *= 1.2
-            this.size *= 1.005
-            this.maxHealth *= 1.1
-            this.health *= 1.1
-            this.bodyDamage *= 1.1
+            this.size *= 1.008
+            this.maxHealth *= 1.03
+            this.health *= 1.03
+            this.bodyDamage *= 1.03
         }
     }
     draw() {
@@ -702,6 +701,7 @@ export class Tank {
         ctx.fillStyle = this.color;
         ctx.strokeStyle = this.border;
         ctx.fillText(abreviatedNumber(this.xp) + "/" + abreviatedNumber(this.xpToNext), 0, -this.size-10, 200)
+        ctx.fillText(abreviatedNumber(this.totalXP), 0, -this.size-40, 200)
         ctx.fillText("Lv." + abreviatedNumber(this.level), 0, -this.size-25, 200)
         ctx.closePath()
         ctx.restore()
@@ -780,14 +780,9 @@ export class Tank {
             if (this.keys[39] && !this.keys[68]) {
                 this.velX += this.speed
             }
-
-            if (this.keys[69]) {
-                this.autoFire = !this.autoFire
-            }
         }
 
         if (this.isPlayer <= 0) {
-            console.log("Bot movement")
             let possibleTargets = []
             let possiblePolys = []
             if (!this.target && this.entities.length > 0) {
@@ -874,10 +869,11 @@ export class Tank {
 }
 
 export class TeamZone {
-    constructor(x, y, w, team, color) {
+    constructor(x, y, w, h, team, color) {
         this.x = x
         this.y = y
-        this.l = w
+        this.lw = w;
+        this.lh = h;
         this.team = team;
         this.color = color;
     }
@@ -885,7 +881,7 @@ export class TeamZone {
         ctx.beginPath()
         ctx.fillStyle = this.color
         ctx.globalAlpha = 0.6
-        ctx.fillRect(this.x - camera.x, this.y - camera.y, this.l, this.l)
+        ctx.fillRect(this.x - camera.x, this.y - camera.y, this.lw, this.lh)
         ctx.closePath()
     }
 }

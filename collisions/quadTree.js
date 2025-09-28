@@ -74,12 +74,31 @@ export class QuadTree {
             return false;
         }
 
+        let oldPoints = []
+
         if (this.points.length < this.capacity) {
             this.points.push(point)
         } else {
             if (!this.divided) {
+                oldPoints = this.points
                 this.subdivide();
                 this.divided = true;
+            }
+            if (oldPoints.length > 0) {
+                oldPoints.forEach((p) => {
+                    if (this.ne.boundary.intersects(p)) {
+                        this.ne.insert(p);
+                    }
+                    if (this.nw.boundary.intersects(p)) {
+                        this.nw.insert(p);
+                    }
+                    if (this.se.boundary.intersects(p)) {
+                        this.se.insert(p);
+                    }
+                    if (this.sw.boundary.intersects(p)) {
+                        this.sw.insert(p);
+                    }
+                })
             }
             if (this.ne.boundary.intersects(point)) {
                 this.ne.insert(point);

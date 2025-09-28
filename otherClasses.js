@@ -1,31 +1,34 @@
 import { ctx, killNotifs, globalBots, player } from "./main.js"
 export class Minimap {
-    constructor(x, y, width, world) {
+    constructor(x, y, width, world, zones) {
         this.x = x;
         this.y = y;
         this.sideLength = width;
         this.scaleDown = width / world;
         this.entities = []
-        this.zones = []
+        this.zones = zones
     }
 
     draw() {
+        ctx.save()
+        ctx.translate(this.x+this.sideLength/2, this.y+this.sideLength/2)
         ctx.beginPath()
         ctx.globalAlpha = 0.5
-        ctx.roundRect(this.x, this.y, this.sideLength*1.5, this.sideLength*1.5, 5)
+        ctx.roundRect(-this.sideLength/2, -this.sideLength/2, this.sideLength*1.5, this.sideLength*1.5, 5)
         ctx.fillStyle = "rgb(235, 235, 235)"
         ctx.lineWidth = 4
         ctx.strokeStyle = "rgb(0,0,0)"
         ctx.fill()
-        ctx.stroke()
         ctx.globalAlpha = 1
         ctx.closePath()
+
+        ctx.clip()
 
         this.entities.forEach((e) => {
             if (e.type !== "bullet" && e.type !== "polygon") {
                 ctx.beginPath()
                 ctx.globalAlpha = 0.5
-                ctx.arc(this.x+this.sideLength/2+e.x*this.scaleDown, this.y+this.sideLength/2+e.y*this.scaleDown, 1.5, 0, Math.PI * 2)
+                ctx.arc(e.x * this.scaleDown, e.y * this.scaleDown, 1.5, 0, Math.PI * 2)
                 ctx.fillStyle = e.type === "player" ? "rgb(0, 0, 0)" : e.color
                 if (e.radiant) {
                     e.radiantB()
@@ -35,18 +38,31 @@ export class Minimap {
                 ctx.closePath()
             }
         })
+        
         this.zones.forEach((e) => {
             ctx.beginPath()
-            ctx.globalAlpha = 0.5
-            ctx.fillStyle = "rgb(255, 0, 0)"
+            ctx.globalAlpha = 0.4
+            ctx.fillStyle = e.color
             ctx.fillRect(
-                e.x*this.scaleDown,
-                e.y*this.scaleDown,
-                this.l*this.scaleDown,
-                this.l*this.scaleDown,
+                e.x * this.scaleDown,
+                e.y * this.scaleDown,
+                e.lw * this.scaleDown,
+                e.lh * this.scaleDown
             )
             ctx.closePath()
         })
+        ctx.restore()
+        
+        ctx.beginPath()
+        ctx.globalAlpha = 1
+        ctx.roundRect(this.x, this.y, this.sideLength*1.5, this.sideLength*1.5, 5)
+        ctx.fillStyle = "rgb(235, 235, 235, 0)"
+        ctx.lineWidth = 4
+        ctx.strokeStyle = "rgb(0,0,0)"
+        ctx.fill()
+        ctx.stroke()
+        ctx.globalAlpha = 1
+        ctx.closePath()
     }
 }
 export class KillNotif {

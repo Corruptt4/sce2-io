@@ -127,21 +127,17 @@ export var polygonColors = [
 export var teamColors = [
     "rgb(0, 0, 255)",
     "rgb(255, 0, 0)",
-    "rgb(0, 255, 0)",
-    "rgb(155, 0, 255)"
 ]
 export var teamZones = [
-    new TeamZone(-mapSizeX/2, -mapSizeX/2, 600, 1, teamColors[0]),
-    new TeamZone(mapSizeX-600, -mapSizeX/2, 600, 1, teamColors[1]),
-    new TeamZone(-mapSizeX/2, mapSizeX-600, 600, 1, teamColors[2]),
-    new TeamZone(mapSizeX-600, mapSizeX-600, 600, 1, teamColors[3])
+    new TeamZone(-mapSizeX/2, -mapSizeX/2, 600, mapSizeX*1.5, 1, teamColors[0]),
+    new TeamZone(mapSizeX-600, -mapSizeX/2, 600, mapSizeX*1.5, 1, teamColors[1])
 ]
 let randomTeam = Math.floor(Math.random()*teamColors.length)
 // polygonColors[((this.level) > polygonColors.length ? (polygonColors.length-1) : (this.level))]
 let chosenZone = teamZones[randomTeam]
 player = new Tank(
-    chosenZone.x + Math.random()*chosenZone.l,  
-    chosenZone.y + Math.random()*chosenZone.l, 
+    chosenZone.x + Math.random()*chosenZone.lw,  
+    chosenZone.y + Math.random()*chosenZone.lh, 
     20, 
     teamColors[randomTeam], 
     800, 
@@ -163,6 +159,9 @@ window.addEventListener("mousemove", (e) => {
 })
 document.addEventListener("keydown", (e) => {
     player.keys[e.keyCode] = true
+    if (e.keyCode == 69) {
+        player.autoFire = !player.autoFire
+    }
 })
 document.addEventListener("keyup", (e) => {
     player.keys[e.keyCode] = false
@@ -185,11 +184,11 @@ for (let i = 0, n = 2; i < n; i++) {
 function spawnBot(lim) {
     for (let i = 0; i < lim; i++) {
         botCount++
-        let team = 1+Math.floor(Math.random()*4)
+        let team = 1+Math.floor(Math.random()*2)
         let teamZone = teamZones[team-1]
         let bot = new Tank(
-            teamZone.x + Math.random()*teamZone.l,  
-            teamZone.y + Math.random()*teamZone.l, 
+            teamZone.x + Math.random()*teamZone.lw,  
+            teamZone.y + Math.random()*teamZone.lh, 
             20, 
             teamZone.color, 
             800, 
@@ -200,7 +199,6 @@ function spawnBot(lim) {
         bot.diet = globalPolygons
         bot.entities = globalStuff
         bot.type = "bot"
-        console.log(bot)
         globalBots.push(bot)
         globalStuff.push(bot)
         qt.insert(bot)
@@ -363,18 +361,18 @@ setInterval(() => {
                     if (memb != memb2) {
                         if (memb.type === memb2.type) {
                                 let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
-                                memb2.pushX += (0.1 * Math.cos(angle))/(memb2.size/10)
-                                memb2.pushY += (0.1 * Math.sin(angle))/(memb2.size/10)
-                                memb.pushX -= (0.1 * Math.cos(angle))/(memb.size/10)
-                                memb.pushY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                                memb2.pushX += (0.05 * Math.cos(angle))/(memb2.size/10)
+                                memb2.pushY += (0.05 * Math.sin(angle))/(memb2.size/10)
+                                memb.pushX -= (0.05 * Math.cos(angle))/(memb.size/10)
+                                memb.pushY -= (0.05 * Math.sin(angle))/(memb.size/10)
                         }
                        
                         if ((memb.type == "player" || memb.type == "bot") && memb2.type == "polygon") {
                                 let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
-                                memb2.pushX += (0.1 * Math.cos(angle))/(memb2.size/10)
-                                memb2.pushY += (0.1 * Math.sin(angle))/(memb2.size/10)
-                                memb.velX -= (0.1 * Math.cos(angle))/(memb.size/10)
-                                memb.velY -= (0.1 * Math.sin(angle))/(memb.size/10)
+                                memb2.pushX += (0.05 * Math.cos(angle))/(memb2.size/10)
+                                memb2.pushY += (0.05 * Math.sin(angle))/(memb2.size/10)
+                                memb.velX -= (0.05 * Math.cos(angle))/(memb.size/10)
+                                memb.velY -= (0.05 * Math.sin(angle))/(memb.size/10)
                                 memb2.damageTaken(memb.bodyDamage)
                                 memb.health -= memb2.damage
                                 memb2.health -= memb.bodyDamage
@@ -383,8 +381,8 @@ setInterval(() => {
                         }
                         if (memb.type == "bullet" && memb2.type == "polygon") {
                             let angle = Math.atan2(memb2.y - memb.y, memb2.x - memb.x)
-                                memb.velX -= (0.05 * Math.cos(angle))/(memb.size/10)
-                                memb.velY -= (0.05 * Math.sin(angle))/(memb.size/10)
+                                memb.velX -= (0.02 * Math.cos(angle))/(memb.size/10)
+                                memb.velY -= (0.02 * Math.sin(angle))/(memb.size/10)
                                 memb2.damageTaken(memb.damage)
                                 memb.health -= memb2.damage
                                 memb2.health -= memb.damage
@@ -489,7 +487,7 @@ function makeGrid(cellSize, camera) {
 }
 
 qt.insert(player)
-let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX)
+let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX, teamZones)
 mini.zones.push(teamZones)
 function render() {
     globalBots.concat(player).forEach((p) => {
@@ -504,8 +502,8 @@ function render() {
     updateCamera(player)
     makeGrid(20, camera)
     
-    teamZones.forEach((z) => {
-        z.draw()
+    teamZones.forEach((zone) => {
+        zone.draw()
     })
     globalStuff.forEach((b) => {
         b.canDraw = true
@@ -525,7 +523,6 @@ function render() {
     mini.x = 10
     mini.y = 10
     mini.entities = globalStuff
-    mini.zones = teamZones
     mini.draw()
     leaderboard.x = window.innerWidth/1.13
     leaderboard.draw()
