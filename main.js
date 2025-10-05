@@ -32,6 +32,7 @@ let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
 let qt = new QuadTree(boundary, 16)
 let blackOut = new BlackOut(mapSizeX, mapSizeY)
 let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
+var blackOutOn = false
 export var camera = {
     x: 0,
     y: 0,
@@ -179,7 +180,7 @@ document.addEventListener("mouseup", (e) => {
 let maxPolys = 400
 let spawners = []
 for (let i = 0, n = 2; i < n; i++) {
-    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 3, qt))
+    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 27, qt))
 }
 function spawnBot(lim) {
     for (let i = 0; i < lim; i++) {
@@ -502,8 +503,10 @@ function render() {
     updateCamera(player)
     makeGrid(20, camera)
     
-    teamZones.forEach((zone) => {
-        zone.draw()
+    teamZones.forEach((zone, i) => {
+        if (i < teamZones.length-1) {
+            zone.draw()
+        }
     })
     globalStuff.forEach((b) => {
         b.canDraw = true
@@ -511,7 +514,9 @@ function render() {
             b.draw()
         }
     })
-    blackOut.draw(ctx)
+    if (blackOutOn) {
+        blackOut.draw(ctx)
+    }
     player.faceMouse()
     player.upgradeButtons.forEach((upg) => {
         if (player.level >= upg.levelRequirement && player.tier == upg.tier) {

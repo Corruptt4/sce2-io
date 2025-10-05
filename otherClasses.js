@@ -23,21 +23,6 @@ export class Minimap {
         ctx.closePath()
 
         ctx.clip()
-
-        this.entities.forEach((e) => {
-            if (e.type !== "bullet" && e.type !== "polygon") {
-                ctx.beginPath()
-                ctx.globalAlpha = 0.5
-                ctx.arc(e.x * this.scaleDown, e.y * this.scaleDown, 1.5, 0, Math.PI * 2)
-                ctx.fillStyle = e.type === "player" ? "rgb(0, 0, 0)" : e.color
-                if (e.radiant) {
-                    e.radiantB()
-                }
-                ctx.fill()
-                ctx.globalAlpha = 1
-                ctx.closePath()
-            }
-        })
         
         this.zones.forEach((e) => {
             ctx.beginPath()
@@ -63,6 +48,30 @@ export class Minimap {
         ctx.stroke()
         ctx.globalAlpha = 1
         ctx.closePath()
+        
+
+        this.entities.forEach((e) => {
+            if (e.type !== "bullet" && e.type !== "polygon" && e.team == player.team) {
+                ctx.save()
+                ctx.translate(this.x+this.sideLength/2 + e.x * this.scaleDown, this.y+this.sideLength/2 + e.y * this.scaleDown)
+                ctx.beginPath()
+                ctx.rotate(e.angle)
+                ctx.globalAlpha = 0.5
+                //ctx.arc(e.x * this.scaleDown, e.y * this.scaleDown, 1.5, 0, Math.PI * 2)
+                ctx.moveTo(-3, 2)
+                ctx.lineTo(3, 0)
+                ctx.lineTo(-3, -2)
+                ctx.fillStyle = e.type === "player" ? "rgb(0, 0, 0)" : e.color
+                if (e.radiant) {
+                    e.radiantB()
+                }
+                ctx.fill()
+                ctx.globalAlpha = 1
+                ctx.rotate(-e.angle)
+                ctx.closePath()
+                ctx.restore()
+            }
+        })
     }
 }
 export class KillNotif {

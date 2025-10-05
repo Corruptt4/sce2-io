@@ -149,7 +149,7 @@ export class Polygon {
         this.damaged = false
         this.dmgTick = 1;
         this.luminancy =  (rad > 0) ? 1 * Math.pow(1.2, rad) : 0;
-        this.sides = this.misshapen ? (sides == 3) ? 3 + 1 + Math.ceil(Math.random() * 10) : sides -1+(Math.ceil(Math.random()*6)) : sides;
+        this.sides = this.misshapen ? (sides == 3) ? 3 + 1 + Math.ceil(Math.random() * 6) : sides -1+(Math.ceil(Math.random()*6)) : sides;
         let index = Math.min(Math.max(sides - 3, 0), polygonColors.length - 1);
         this.actualColor = polygonColors[index]
         this.color = polygonColors[index];

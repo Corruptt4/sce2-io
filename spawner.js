@@ -16,7 +16,6 @@ export class Spawner {
     }
 
     spawn(chosenSides, x, y) {
-        console.log("Spawning!");
         for (let i = 0; i <= 100; i++) {
             this.radiants.push(
                 [["Radiant", "Gleaming", "Luminous", "Lustrous", "Highly Radiant"]
