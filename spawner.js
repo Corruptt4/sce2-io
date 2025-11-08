@@ -19,7 +19,7 @@ export class Spawner {
         for (let i = 0; i <= 100; i++) {
             this.radiants.push(
                 [["Radiant", "Gleaming", "Luminous", "Lustrous", "Highly Radiant"]
-                [(i<5) ? i : 4], 1/(this.radiantChance*Math.pow(3, i-1)), i]
+                [(i<5) ? i : 4], 1/(this.radiantChance*Math.pow(3, i)), i]
             )
         }
         let chosenRad = Math.random()
