@@ -32,7 +32,7 @@ let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
 let qt = new QuadTree(boundary, 16)
 let blackOut = new BlackOut(mapSizeX, mapSizeY)
 let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
-var blackOutOn = false
+var blackOutOn = true
 export var camera = {
     x: 0,
     y: 0,
@@ -108,7 +108,7 @@ canvas.height = window.innerHeight
 canvas2.width = window.innerWidth
 canvas2.height = window.innerHeight
 
-var globalBotCount = 20
+var globalBotCount = 60
 var botCount = 0
 
 export var polygonColors = [
@@ -180,7 +180,7 @@ document.addEventListener("mouseup", (e) => {
 let maxPolys = 400
 let spawners = []
 for (let i = 0, n = 2; i < n; i++) {
-    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 27, qt))
+    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 3, qt))
 }
 function spawnBot(lim) {
     for (let i = 0; i < lim; i++) {

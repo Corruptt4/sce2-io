@@ -162,7 +162,7 @@ export class Polygon {
         this.maxSpeed = 0.125
         this.speed = 0.125*Math.pow(1.05 , rad)
         this.totalDamage = 0
-        this.normDmgTick = 3
+        this.normDmgTick = 1
         
         this.ranR = Math.ceil(Math.random()*255)
         this.ranG = Math.ceil(Math.random()*255)
@@ -616,7 +616,7 @@ export class Tank {
         this.autoFire = false
         this.xpToNext = 100
         this.totalXP = 0
-        this.followTeammatePlayer = false;
+        this.followTeammatePlayer = true;
         this.level = 1
         this.type = "player"
         this.abilityMaxRadius = 90
@@ -639,14 +639,14 @@ export class Tank {
         this.guns = []
         for (let i = 0; i < 5; i++) {
             this.guns.push(
-                new Barrel(0, 0, [16, 16, 18, 18, 20][i], 8, this, {
+                new Barrel(0, 0, [25, 22, 19, 16, 13][i], 8, this, {
                     reload: 20,
                     damage: 6,
                     bulletHealth: 30,
-                    angleOffset: [40, -40, 20, -20, 0][i],
-                    offsetY: [2, -2, 1, -1, 0][i],
+                    angleOffset: 0,
+                    offsetY: 0,
                     offsetX: 0,
-                    delay: [0.667, 0.667, 0.333, 0.333, 0][i],
+                    delay: [0, 0.2, 0.4, 0.6, 0.8][i],
                     bulletSpeed: 1.6
                 })
             )
@@ -844,7 +844,7 @@ export class Tank {
                     this.velX += this.speed * Math.cos(((this.followTeammatePlayer && player.team === this.team) ? pangle : this.angle ))
                     this.velY += this.speed * Math.sin(((this.followTeammatePlayer && player.team === this.team) ? pangle : this.angle ))
                 }
-                if (this.target.health <= 0 || dist >= (r*(3*r))) {
+                if (this.target.health <= 0 || dist >= (3*(r*r))) {
                     this.target = null
                 }
             }
