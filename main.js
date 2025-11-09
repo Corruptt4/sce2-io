@@ -34,7 +34,7 @@ let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
 let qt = new QuadTree(boundary, 16)
 let blackOut = new BlackOut(mapSizeX, mapSizeY)
 let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
-var blackOutOn = 0
+var blackOutOn = 1
 export var camera = {
     x: 0,
     y: 0,
@@ -164,6 +164,9 @@ document.addEventListener("keydown", (e) => {
     player.keys[e.keyCode] = true
     if (e.keyCode == 69) {
         player.autoFire = !player.autoFire
+    }
+    if (e.keyCode == 67) {
+        player.autoSpin = !player.autoSpin
     }
 })
 document.addEventListener("keyup", (e) => {

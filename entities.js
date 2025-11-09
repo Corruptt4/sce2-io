@@ -618,6 +618,7 @@ export class Tank {
         this.totalXP = 0
         this.followTeammatePlayer = false
         this.level = 1
+        this.autoSpin = 0
         this.type = "player"
         this.abilityMaxRadius = 90
         this.speed = 0.8 / (this.size/9)
@@ -637,17 +638,17 @@ export class Tank {
             new UpgradeButton(12, Mono, this, true, 0, 2),
         ]
         this.guns = []
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0, n = 8; i < n; i++) {
             this.guns.push(
-                new Barrel(0, 0, [25, 22, 19, 16, 13][i], 8, this, {
-                    reload: 20,
-                    damage: 6,
-                    bulletHealth: 30,
-                    angleOffset: 0,
+                new Barrel(0, 0, 18, 8, this, {
+                    reload: 15,
+                    damage: 15,
+                    bulletHealth: 50,
+                    angleOffset: (360 / n)*i,
                     offsetY: 0,
                     offsetX: 0,
-                    delay: [0, 0.2, 0.4, 0.6, 0.8][i],
-                    bulletSpeed: 1.6
+                    delay: 0,
+                    bulletSpeed: 1.45
                 })
             )
         }
@@ -724,7 +725,7 @@ export class Tank {
         }
     }
     faceMouse() {
-        if (this.mx != null && this.my != null) {
+        if (this.mx != null && this.my != null && !this.autoSpin) {
             let dx = this.mx-this.x
             let dy = this.my-this.y
             let angle = Math.atan2(dy, dx)
@@ -779,6 +780,13 @@ export class Tank {
             }
             if (this.keys[39] && !this.keys[68]) {
                 this.velX += this.speed
+            }
+
+            if (this.autoSpin) {
+                this.angle += 0.03
+                if (Math.abs(this.angle) == Math.PI * 2) {
+                    this.angle = 0
+                }
             }
         }
 
