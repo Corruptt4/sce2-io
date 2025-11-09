@@ -34,7 +34,7 @@ let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
 let qt = new QuadTree(boundary, 16)
 let blackOut = new BlackOut(mapSizeX, mapSizeY)
 let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
-var blackOutOn = 1
+var blackOutOn = 0
 export var camera = {
     x: 0,
     y: 0,
