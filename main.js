@@ -14,11 +14,13 @@ export let player = null
 ,     shocks = []
 ,     bullets = []
 ,     particles = []
-,     mapSizeX = 4000
+,     mapSizeX = 8000
 ,     mapSizeY = mapSizeX
 ,     miniWidth = 350
 ,     miniHeight = 350
 ,     killNotifs = []
+,     fps = 0
+,     setFPS = 0
 
 export let globalStuff = globalPolygons.concat(bullets.concat(player).concat(globalBots))
 
@@ -32,7 +34,7 @@ let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
 let qt = new QuadTree(boundary, 16)
 let blackOut = new BlackOut(mapSizeX, mapSizeY)
 let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
-var blackOutOn = true
+var blackOutOn = 0
 export var camera = {
     x: 0,
     y: 0,
@@ -108,7 +110,7 @@ canvas.height = window.innerHeight
 canvas2.width = window.innerWidth
 canvas2.height = window.innerHeight
 
-var globalBotCount = 60
+var globalBotCount = 25
 var botCount = 0
 
 export var polygonColors = [
@@ -177,10 +179,10 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-let maxPolys = 400
+let maxPolys = 500
 let spawners = []
 for (let i = 0, n = 2; i < n; i++) {
-    spawners.push(new Spawner(0, maxPolys/n, 12, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 3, qt))
+    spawners.push(new Spawner(0, maxPolys/n, 13, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 9, qt))
 }
 function spawnBot(lim) {
     for (let i = 0; i < lim; i++) {
@@ -262,7 +264,7 @@ setInterval(() => {
             spawners[Math.floor(Math.random()*spawners.length)].currentPolys--
         }
         if (poly.radiant > 0) {
-            poly.time += 0.05
+            poly.time += 0.07
         }
         if (poly.radiant >= 3) {
             poly.luminousStar.upd()
@@ -490,6 +492,10 @@ function makeGrid(cellSize, camera) {
 qt.insert(player)
 let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX, teamZones)
 mini.zones.push(teamZones)
+setInterval(() => {
+    setFPS = fps
+    fps = 0
+}, 1000)
 function render() {
     globalBots.concat(player).forEach((p) => {
         if (!leaderboard.tanks.includes(p)) {
@@ -535,6 +541,7 @@ function render() {
     killNotifs.forEach((notif) => {
         notif.draw()
     })
+    fps++
     requestAnimationFrame(render)
 }
 render()
