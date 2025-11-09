@@ -54,7 +54,7 @@ export class Spawner {
                     this.spawn(pol[0], randX, randY)
                 }
             })
-           if (Math.random() < 0.03 && this.maxSides >= 10) {
+           if (Math.random() < 0.06 && this.maxSides >= 10) {
                 let random = Math.random()
                 nested.forEach((pol) => {
                     if (random < pol[1]) {

@@ -123,10 +123,10 @@ export class Polygon {
         ]
         this.radiantnames = ["Radiant", "Gleaming", "Luminous", "Lustruous"]
         this.radiant = rad
-        this.minAuraSize = (11.5*Math.pow(1.55, (sides-3)))
-        this.maxAuraSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
+        this.minAuraSize = (12*Math.pow(1.55, (sides-3)))
+        this.maxAuraSize = (15*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
         this.minStarSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
-        this.maxStarSize = (13*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
+        this.maxStarSize = (15*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
         this.starSize = (12*Math.pow(1.55, (sides-3)))
         this.auraSize = (12*Math.pow(1.55, (sides-3)))
         this.time = 0;
@@ -312,7 +312,7 @@ export class Polygon {
             this.dmgTick--
         }
         if (this.dmgTick <= 0 && !this.damaged) {
-            this.dmgTick = 7
+            this.dmgTick = 2
             this.damaged = true
             this.color = this.actualColor
             this.border = darkenRGB(this.color, 20);
@@ -323,7 +323,7 @@ export class Polygon {
             this.color = this.colorBlend(perc)
             this.border = darkenRGB(this.color, 15)
             if (this.normDmgTick <= 0) {
-                this.normDmgTick = 5
+                this.normDmgTick = 2
                 this.totalDamage = 0
                 this.damaged = false
                 this.color = this.actualColor
@@ -616,7 +616,7 @@ export class Tank {
         this.autoFire = false
         this.xpToNext = 100
         this.totalXP = 0
-        this.followTeammatePlayer = true;
+        this.followTeammatePlayer = false
         this.level = 1
         this.type = "player"
         this.abilityMaxRadius = 90
