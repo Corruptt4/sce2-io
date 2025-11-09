@@ -79,7 +79,7 @@ export class RadiantStar {
         ctx.rotate(this.ang)
         this.mean = (this.minSize+this.maxSize)/2
         this.amplitude = (this.maxSize-this.minSize)/2
-        this.size = this.mean+this.amplitude*Math.sin(this.host.speed*this.host.time)
+        this.size = this.mean+this.amplitude*Math.sin(this.host.speed*this.host.time*3)
         ctx.moveTo(Math.cos(0)*this.size, Math.sin(0)*this.size)
         for (let i = 0; i < 2*this.points+1; i++) {
             let r = (i % 2 === 0) ? this.size : this.size * this.ins
@@ -100,13 +100,13 @@ export class RadiantStar {
     }
     upd() {
         if (this.lustBehavior) {
-            this.rotationupd = 0.1 * Math.sin(this.host.speed * (this.host.time/20))
+            this.rotationupd = 0.1 * Math.sin(this.host.speed * (this.host.time/15))
             this.ang += this.rotationupd
         } else {
             if (this.size < 0) {
-                this.ang -= (this.host.speed / 10) * this.sizeAmp
+                this.ang -= (this.host.speed / 8) * this.sizeAmp
             } else if (this.size > 0) {
-                this.ang += (this.host.speed / 10) * this.sizeAmp
+                this.ang += (this.host.speed / 8) * this.sizeAmp
             }
         }
     }
@@ -123,18 +123,18 @@ export class Polygon {
         ]
         this.radiantnames = ["Radiant", "Gleaming", "Luminous", "Lustruous"]
         this.radiant = rad
-        this.minAuraSize = (12*Math.pow(1.55, (sides-3)))
-        this.maxAuraSize = (15*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
-        this.minStarSize = (12*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
-        this.maxStarSize = (15*Math.pow(1.55, (sides-3)))*Math.pow(1.08, (rad))
-        this.starSize = (12*Math.pow(1.55, (sides-3)))
-        this.auraSize = (12*Math.pow(1.55, (sides-3)))
+        this.minAuraSize = (12*Math.pow(1.6, (sides-3)))
+        this.maxAuraSize = (15*Math.pow(1.6, (sides-3)))*Math.pow(1.08, (rad))
+        this.minStarSize = (12*Math.pow(1.6, (sides-3)))*Math.pow(1.08, (rad))
+        this.maxStarSize = (15*Math.pow(1.6, (sides-3)))*Math.pow(1.08, (rad))
+        this.starSize = (12*Math.pow(1.6, (sides-3)))
+        this.auraSize = (12*Math.pow(1.6, (sides-3)))
         this.time = 0;
         this.health = 35 * Math.pow(3.6, sides)
         this.maxHealth = 35 * Math.pow(3.6, sides)
         this.xp = (250 + (1000 * (Math.pow(4, sides-3) - 1))/3) * (this.misshapen ? 3 : 1) * ((rad > 0) ? 25*Math.pow(4, rad-1) : 1) * (this.miscolored ? 3 : 1)
-        this.misshapen = Math.random() < 1/256
-        this.miscolored = Math.random() < 1/256
+        this.misshapen = Math.random() < 1/128
+        this.miscolored = Math.random() < 1/128
         this.y = y;
         this.luminousStar = new RadiantStar(x, y, 0.03, 6, 0.4, this, 0.8)
         this.lustrousStar = new RadiantStar(x, y, 0.06, 3, 0.1/(Math.pow(1.08, rad-4)), this, 1.5, true)
@@ -221,7 +221,7 @@ export class Polygon {
         if (this.radiant >= 2) {
             this.mean = (this.minAuraSize+this.maxAuraSize)/2
             this.amplitude = (this.maxAuraSize-this.minAuraSize)/2
-            this.auraSize = this.mean+this.amplitude*Math.sin(this.speed*this.time)
+            this.auraSize = this.mean+this.amplitude*Math.sin(this.speed*this.time*2.5)
             ctx.save()
             ctx.beginPath()
             ctx.translate(this.x-camera.x, this.y-camera.y)

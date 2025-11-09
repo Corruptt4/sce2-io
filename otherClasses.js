@@ -1,4 +1,4 @@
-import { ctx, killNotifs, globalBots, player } from "./main.js"
+import { ctx, killNotifs, globalBots, player, fps, setFPS, darkenRGB } from "./main.js"
 export class Minimap {
     constructor(x, y, width, world, zones) {
         this.x = x;
@@ -7,11 +7,32 @@ export class Minimap {
         this.scaleDown = width / world;
         this.entities = []
         this.zones = zones
+        this.fpsFillColor = "rgb(255, 255, 255)"
     }
 
     draw() {
         ctx.save()
         ctx.translate(this.x+this.sideLength/2, this.y+this.sideLength/2)
+        
+        ctx.beginPath()
+        // FPS colors
+        if (setFPS > 40) {
+            this.fpsFillColor = "rgb(255, 255, 255)"
+        } else if (setFPS <= 40 && setFPS > 30) {
+            this.fpsFillColor = "rgb(255, 145, 0)"
+        }  else if (setFPS <= 30) {
+            this.fpsFillColor = "rgb(255, 0, 0)"
+        }
+
+        ctx.fillStyle = this.fpsFillColor
+        ctx.lineWidth = 4
+        ctx.strokeStyle = darkenRGB(this.fpsFillColor, 30)
+        ctx.font = "25px Arial"
+        ctx.textAlign = "left"
+        ctx.strokeText("FPS: " + setFPS, -this.sideLength/2 - 2, this.sideLength + 30)
+        ctx.fillText("FPS: " + setFPS, -this.sideLength/2 - 2, this.sideLength + 30)
+        ctx.closePath()
+
         ctx.beginPath()
         ctx.globalAlpha = 0.5
         ctx.roundRect(-this.sideLength/2, -this.sideLength/2, this.sideLength*1.5, this.sideLength*1.5, 5)
