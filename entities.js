@@ -1,5 +1,5 @@
 import { darkenRGB, ctx, ctx2, camera, mx, my, bullets, globalPolygons, shocks, abreviatedNumber, particles, getRadiantColor, mapSizeX, player  } from "./main.js"
-import {degToRads} from "./miscellaneous.js"
+import {degToRads, randomElement} from "./miscellaneous.js"
 import { UpgradeButton, Mono } from "./tankUpgrades.js";
 
 export function extractRGB(rgb) {
@@ -500,6 +500,7 @@ export class Barrel {
         this.width = width;
         this.height = height;
         this.reloadTick = 0
+        this.delayReloadTick = 0
         this.reloadMaxTick = stats.reload
         this.host = host;
         this.angleOffset = stats.angleOffset || 0
@@ -507,8 +508,10 @@ export class Barrel {
         this.delay = stats.delay || 0
         this.stats = stats;
         this.canAnimate = false;
+        this.canShoot = false;
         this.shootHeight = width/2
         this.reversingReload = false;
+        this.delayWait = false
         this.shootHeight2 = width
         this.offsetX = stats.offsetX || 0
         this.offsetY = stats.offsetY || 0
@@ -516,8 +519,24 @@ export class Barrel {
         this.color = "rgb(135,135,135)"
     }
     reload() {
-        if (this.reloadTick < (this.reloadMaxTick+this.reloadMaxTick*this.delay)) {
+        if (this.reloadTick > this.reloadMaxTick) {
             this.reloadTick++
+        }
+        if (this.delayWait) {
+            this.delayReloadTick++
+        }
+        if (this.delayReloadTick >= Math.floor(this.reloadMaxTick*this.delay)) {
+            this.canShoot = true
+        }
+        
+        if (this.reloadTick >= this.reloadMaxTick) {
+            if (this.delay == 0) {
+                this.reloadTick = 0
+                this.canShoot = true
+            }
+            if (this.delay > 0) {
+                this.delayWait = true
+            }
         }
     }
     getGunTip() {
@@ -535,9 +554,18 @@ export class Barrel {
     
     shoot() {
         let s = this.getGunTip()
-        if (this.reloadTick >= (this.reloadMaxTick+this.reloadMaxTick*this.delay)) {
+         if (this.canShoot) {
+            if (this.delay == 0) {
+                this.host.guns.forEach((gun) => {
+                    if (gun.delay > 0) {
+                        gun.noDelayCanShoot = true
+                    }
+                })
+            }
             this.canAnimate = true
-            this.reloadTick = 0
+            this.canShoot = false
+            this.delayWait = false
+            this.delayReloadTick = 0
             let bullet = new Bullet(s.x, s.y, 5*this.bulletSpeed*Math.cos(this.angle), 5*this.bulletSpeed*Math.sin(this.angle), this.host, (this.stats.damage * (1.03**this.host.level)), this.height*(this.host.size/10)/2, (this.stats.bulletHealth * (1.03**this.host.level)))
             bullets.push(bullet)
         }
@@ -638,16 +666,16 @@ export class Tank {
             new UpgradeButton(12, Mono, this, true, 0, 2),
         ]
         this.guns = []
-        for (let i = 0, n = 8; i < n; i++) {
+        for (let i = 0, n = 2; i < n; i++) {
             this.guns.push(
-                new Barrel(0, 0, 18, 8, this, {
+                new Barrel(0, 0, 18, 9, this, {
                     reload: 15,
                     damage: 15,
                     bulletHealth: 50,
-                    angleOffset: (360 / n)*i,
-                    offsetY: 0,
+                    angleOffset: 0,
+                    offsetY: [5.5, -5.5][i],
                     offsetX: 0,
-                    delay: 0,
+                    delay: [0, 0.5][i],
                     bulletSpeed: 1.45
                 })
             )

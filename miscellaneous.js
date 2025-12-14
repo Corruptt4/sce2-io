@@ -8,3 +8,7 @@ export function updateCamera(player) {
 export function degToRads(deg) {
     return deg * (Math.PI / 180)
 }
+
+export function randomElement(list) {
+    return list[Math.floor(Math.random() * list.length)]
+}

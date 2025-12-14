@@ -29,11 +29,11 @@ import { updateCamera } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
 import { Polygon, TeamZone, BlackOut, Tank } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
-import { KillNotif, Minimap, Leaderboard } from "./otherClasses.js"
+import { KillNotif, Minimap, Leaderboard, InfoBar } from "./uiElements.js"
 let boundary = new Rect(-mapSizeX/2, -mapSizeX/2, mapSizeX*1.5, mapSizeX*1.5)
 let qt = new QuadTree(boundary, 16)
 let blackOut = new BlackOut(mapSizeX, mapSizeY)
-let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
+export let leaderboard = new Leaderboard(canvas.width*2, 0, 10, globalBots.concat(player))
 var blackOutOn = 0
 export var camera = {
     x: 0,
@@ -95,14 +95,19 @@ export function darkenRGB(rgb, darken) {
         return "rgb(0, 0, 0)";
     }
 
-    let match = rgb.match(/\d+/g)
-    if (!match || match.length < 3) return rgb; 
-    
-    let r = Math.max(0, parseInt(match[0], 10) - darken);
-    let g = Math.max(0, parseInt(match[1], 10) - darken);
-    let b = Math.max(0, parseInt(match[2], 10) - darken);
+    const match = rgb.match(/\d+(\.\d+)?/g);
+    if (!match || match.length < 3) return rgb;
 
-    return `rgb(${r}, ${g}, ${b})`;
+    const r = Math.max(0, parseInt(match[0], 10) - darken);
+    const g = Math.max(0, parseInt(match[1], 10) - darken);
+    const b = Math.max(0, parseInt(match[2], 10) - darken);
+    const a = match[3] !== undefined ? parseFloat(match[3]) : undefined;
+
+    if (a !== undefined) {
+        return `rgba(${r}, ${g}, ${b}, ${a})`;
+    } else {
+        return `rgb(${r}, ${g}, ${b})`;
+    }
 }
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
@@ -299,8 +304,8 @@ setInterval(() => {
         if (b.type == "bot") {
             b.move()
             b.guns.forEach((g) => {
+                    g.reload()
                     if (b.target) {
-                        g.reload()
                         g.shoot()
                         b.levelUpCheck()
                     }
@@ -494,6 +499,10 @@ function makeGrid(cellSize, camera) {
 
 qt.insert(player)
 let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX, teamZones)
+let infoBars = [
+    new InfoBar(canvas.width / 2, canvas.height / 1.03, 350, 25, "lv", player), // LEVEL
+    new InfoBar(canvas.width / 2, canvas.height / 1.03 - 35, 200, 20, "xp", player) // XP
+]
 mini.zones.push(teamZones)
 setInterval(() => {
     setFPS = fps
@@ -533,7 +542,10 @@ function render() {
         }
     })
     
-    
+    infoBars.forEach((inf) => {
+        inf.draw()
+        inf.leaderboardTopPlayerinfo = leaderboard.tanks[0]
+    })
     mini.x = 10
     mini.y = 10
     mini.entities = globalStuff

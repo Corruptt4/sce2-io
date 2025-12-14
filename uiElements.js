@@ -1,4 +1,4 @@
-import { ctx, killNotifs, globalBots, player, fps, setFPS, darkenRGB, abreviatedNumber } from "./main.js"
+import { ctx, killNotifs, globalBots, player, fps, setFPS, darkenRGB, abreviatedNumber, leaderboard } from "./main.js"
 export class Minimap {
     constructor(x, y, width, world, zones) {
         this.x = x;
@@ -223,6 +223,7 @@ export class InfoBar {
         this.height = height;
         this.type = type;
         this.player = player;
+        this.leaderboardTopPlayerinfo = []
         this.color = "rgba(255, 255, 255, 0.6)"
     }
     draw() {
@@ -245,9 +246,10 @@ export class InfoBar {
                 ctx.lineWidth = 4
                 ctx.lineJoin = "round"
                 ctx.font = "20px Arial"
+                ctx.textAlign = "left"
+                ctx.fill()
                 ctx.fillStyle = "white"
                 ctx.strokeStyle = "black"
-                ctx.textAlign = "left"
                 ctx.strokeText("Level: ", this.x - this.width/2 + 15, this.y + 20/3)
                 ctx.fillText("Level: ", this.x - this.width/2 + 15, this.y + 20/3)
                 ctx.textAlign = "right"
@@ -259,7 +261,12 @@ export class InfoBar {
                 ctx.closePath()
                 break;
             }
-            case "xp": {
+            case "xp":  {
+                ctx.beginPath()
+                ctx.fillStyle = this.player.color
+                ctx.roundRect(this.x - this.width / 2, this.y - this.height / 2, this.width * ((this.player.totalXP+1)/(this.leaderboardTopPlayerinfo.totalXP+1)), this.height, this.height)
+                ctx.fill()
+                ctx.closePath()
                 ctx.beginPath()
                 ctx.lineWidth = 4
                 ctx.lineJoin = "round"
