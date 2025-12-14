@@ -1,4 +1,4 @@
-import { ctx, killNotifs, globalBots, player, fps, setFPS, darkenRGB } from "./main.js"
+import { ctx, killNotifs, globalBots, player, fps, setFPS, darkenRGB, abreviatedNumber } from "./main.js"
 export class Minimap {
     constructor(x, y, width, world, zones) {
         this.x = x;
@@ -204,3 +204,73 @@ export class Leaderboard {
     }
 }
 
+export class InfoBar {
+    constructor(x, y, width, height, type, player) {
+        /** 
+         * Types:
+         * 1. Level
+         * 2. XP bar
+         * 3. Leaderboard bar (shows your rank)
+         * 
+         * Could be:
+         * LV
+         * XP
+         * LBB
+         */
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.type = type;
+        this.player = player;
+        this.color = "rgba(255, 255, 255, 0.6)"
+    }
+    draw() {
+        ctx.beginPath()
+        ctx.fillStyle = darkenRGB(this.color, 0)
+        ctx.strokeStyle = darkenRGB("rgb(255, 255, 255)", 15)
+        ctx.lineWidth = 10
+        ctx.roundRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height, this.height)
+        ctx.stroke()
+        ctx.fill()
+        ctx.closePath()
+
+        if (this.type === typeof String) {
+            this.type.toLowerCase()
+        }
+
+        switch (this.type) {
+            case "lv": {
+                ctx.beginPath()
+                ctx.lineWidth = 4
+                ctx.lineJoin = "round"
+                ctx.font = "20px Arial"
+                ctx.fillStyle = "white"
+                ctx.strokeStyle = "black"
+                ctx.textAlign = "left"
+                ctx.strokeText("Level: ", this.x - this.width/2 + 15, this.y + 20/3)
+                ctx.fillText("Level: ", this.x - this.width/2 + 15, this.y + 20/3)
+                ctx.textAlign = "right"
+                ctx.strokeText(this.player.level, this.x + this.width/2 - 15, this.y + 20/3)
+                ctx.fillText(this.player.level, this.x + this.width/2 - 15, this.y + 20/3)
+                ctx.textAlign = "center"
+                ctx.strokeText(abreviatedNumber(this.player.xp) + " / " + abreviatedNumber(this.player.xpToNext), this.x, this.y + 20/3)
+                ctx.fillText(abreviatedNumber(this.player.xp) + " / " + abreviatedNumber(this.player.xpToNext), this.x, this.y + 20/3)
+                ctx.closePath()
+                break;
+            }
+            case "xp": {
+                ctx.beginPath()
+                ctx.lineWidth = 4
+                ctx.lineJoin = "round"
+                ctx.font = "15px Ubuntu"
+                ctx.fillStyle = "white"
+                ctx.strokeStyle = "black"
+                ctx.textAlign = "center"
+                ctx.strokeText(abreviatedNumber(this.player.totalXP), this.x, this.y + 15/3)
+                ctx.fillText(abreviatedNumber(this.player.totalXP), this.x, this.y + 15/3)
+                ctx.closePath()
+            }
+        }
+    }
+}
