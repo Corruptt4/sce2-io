@@ -40,10 +40,10 @@ export class Spawner {
         let polys = []
         let nested = []
         for (let i = 3; i <= this.maxSides-(this.maxSides-8); i++) {
-            polys.push([i, 1/Math.pow(2.16, i-3)])
+            polys.push([i, 1/Math.pow(2.3, i-3)])
         }
         for (let i = 11; i <= this.maxSides; i++) {
-            nested.push([i, 1/Math.pow(3.5, i-11)])
+            nested.push([i, 1/Math.pow(3.7, i-11)])
         }
         if (this.currentPolys < this.maxPoly) {
             let randX = -this.mapSizeX/2 + Math.random() * this.mapSizeX*1.5

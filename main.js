@@ -171,6 +171,9 @@ document.addEventListener("keydown", (e) => {
         player.autoFire = !player.autoFire
     }
     if (e.keyCode == 67) {
+        if (!player.autoSpin) {
+            player.autoSpins++
+        }
         player.autoSpin = !player.autoSpin
     }
 })
@@ -187,10 +190,10 @@ document.addEventListener("mouseup", (e) => {
         player.holdMouse = false
     }
 })
-let maxPolys = 500
+let maxPolys = 450
 let spawners = []
-for (let i = 0, n = 2; i < n; i++) {
-    spawners.push(new Spawner(0, maxPolys/n, 13, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 9, qt))
+for (let i = 0, n = 3; i < n; i++) {
+    spawners.push(new Spawner(0, maxPolys/n, 13, Polygon, globalPolygons, mapSizeX, mapSizeY, polygonColors, 1, 3, qt))
 }
 function spawnBot(lim) {
     for (let i = 0; i < lim; i++) {
@@ -287,6 +290,7 @@ setInterval(() => {
     bullets.forEach((bul) => {
         bul.move()
         bul.desp()
+        bul.borderCheck()
         
         if (bul.isBomb) {
             bul.velX *= frictionFactor
@@ -489,7 +493,7 @@ function makeGrid(cellSize, camera) {
 
     // bounds
     ctx.beginPath()
-    ctx.fillStyle = "rgba(185, 185, 185, 0.3)"
+    ctx.fillStyle = "rgba(145, 145, 145, 0.3)"
     ctx.fillRect(-mapSizeX*1.5-camera.x,-mapSizeY/2-camera.y, mapSizeX*3.5, -mapSizeY)
     ctx.fillRect(-mapSizeX/2-camera.x,-mapSizeY/2-camera.y, -mapSizeX, mapSizeY*2.5)
     ctx.fillRect(-mapSizeX/2-camera.x,mapSizeY-camera.y, mapSizeX*2.5, mapSizeY)
@@ -500,8 +504,9 @@ function makeGrid(cellSize, camera) {
 qt.insert(player)
 let mini = new Minimap(canvas.width, canvas.height, 125, mapSizeX, teamZones)
 let infoBars = [
+    new InfoBar(canvas.width / 2, canvas.height / 1.03 - 35, 350, 20, "xp", player), // XP
+    new InfoBar(canvas.width / 2, canvas.height / 1.03 - 35, 300, 16, "txp", player), // XP
     new InfoBar(canvas.width / 2, canvas.height / 1.03, 350, 25, "lv", player), // LEVEL
-    new InfoBar(canvas.width / 2, canvas.height / 1.03 - 35, 200, 20, "xp", player) // XP
 ]
 mini.zones.push(teamZones)
 setInterval(() => {
@@ -542,9 +547,11 @@ function render() {
         }
     })
     
-    infoBars.forEach((inf) => {
+    infoBars.forEach((inf, index) => {
         inf.draw()
         inf.leaderboardTopPlayerinfo = leaderboard.tanks[0]
+        inf.x = canvas.width / 2
+        inf.y = canvas.height / 1.03 - 35*index
     })
     mini.x = 10
     mini.y = 10

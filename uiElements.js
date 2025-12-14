@@ -184,8 +184,8 @@ export class Leaderboard {
             ctx.stroke();
             ctx.lineWidth = 6
             ctx.lineJoin = "round"
-            ctx.strokeText(this.ranks[i][1].toFixed(0), this.x + 100, this.y + 10 + 20 * (i + 1))
-            ctx.fillText(this.ranks[i][1].toFixed(0), this.x + 100, this.y + 10 + 20 * (i + 1));
+            ctx.strokeText(abreviatedNumber(this.ranks[i][1]), this.x + 100, this.y + 10 + 20 * (i + 1))
+            ctx.fillText(abreviatedNumber(this.ranks[i][1]), this.x + 100, this.y + 10 + 20 * (i + 1));
             ctx.strokeText("Top " + (i+1), this.x - 20, this.y + 10 + 20 * (i + 1))
             ctx.fillText("Top " + (i+1), this.x - 20, this.y + 10 + 20 * (i + 1));
             
@@ -224,20 +224,22 @@ export class InfoBar {
         this.type = type;
         this.player = player;
         this.leaderboardTopPlayerinfo = []
-        this.color = "rgba(255, 255, 255, 0.6)"
+        this.color = "rgb(0, 0, 0)"
     }
     draw() {
-        ctx.beginPath()
-        ctx.fillStyle = darkenRGB(this.color, 0)
-        ctx.strokeStyle = darkenRGB("rgb(255, 255, 255)", 15)
-        ctx.lineWidth = 10
-        ctx.roundRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height, this.height)
-        ctx.stroke()
-        ctx.fill()
-        ctx.closePath()
-
         if (this.type === typeof String) {
             this.type.toLowerCase()
+        }
+        if (this.type != "lv") {
+            
+            ctx.beginPath()
+            ctx.fillStyle = darkenRGB(this.color, 0)
+            ctx.strokeStyle = darkenRGB("rgb(0, 0, 0)", 15)
+            ctx.lineWidth = 10
+            ctx.roundRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height, this.height)
+            ctx.stroke()
+            ctx.fill()
+            ctx.closePath()
         }
 
         switch (this.type) {
@@ -245,26 +247,20 @@ export class InfoBar {
                 ctx.beginPath()
                 ctx.lineWidth = 4
                 ctx.lineJoin = "round"
-                ctx.font = "20px Arial"
-                ctx.textAlign = "left"
+                ctx.font = "15px Arial"
+                ctx.textAlign = "center"
                 ctx.fill()
                 ctx.fillStyle = "white"
                 ctx.strokeStyle = "black"
-                ctx.strokeText("Level: ", this.x - this.width/2 + 15, this.y + 20/3)
-                ctx.fillText("Level: ", this.x - this.width/2 + 15, this.y + 20/3)
-                ctx.textAlign = "right"
-                ctx.strokeText(this.player.level, this.x + this.width/2 - 15, this.y + 20/3)
-                ctx.fillText(this.player.level, this.x + this.width/2 - 15, this.y + 20/3)
-                ctx.textAlign = "center"
-                ctx.strokeText(abreviatedNumber(this.player.xp) + " / " + abreviatedNumber(this.player.xpToNext), this.x, this.y + 20/3)
-                ctx.fillText(abreviatedNumber(this.player.xp) + " / " + abreviatedNumber(this.player.xpToNext), this.x, this.y + 20/3)
+                ctx.strokeText("Level: " + this.player.level + " " +  this.player.weaponUpgrade + "-" + this.player.bodyUpgrade, this.x, this.y + 15/3 + 12)
+                ctx.fillText("Level: " + this.player.level + " " +  this.player.weaponUpgrade + "-" + this.player.bodyUpgrade, this.x, this.y + 15/3 + 12)
                 ctx.closePath()
                 break;
             }
             case "xp":  {
                 ctx.beginPath()
                 ctx.fillStyle = this.player.color
-                ctx.roundRect(this.x - this.width / 2, this.y - this.height / 2, this.width * ((this.player.totalXP+1)/(this.leaderboardTopPlayerinfo.totalXP+1)), this.height, this.height)
+                ctx.roundRect(this.x - this.width / 2, this.y - this.height / 2, this.width * Math.min(((this.player.xp)/(this.player.xpToNext)), 1), this.height, this.height)
                 ctx.fill()
                 ctx.closePath()
                 ctx.beginPath()
@@ -274,9 +270,29 @@ export class InfoBar {
                 ctx.fillStyle = "white"
                 ctx.strokeStyle = "black"
                 ctx.textAlign = "center"
-                ctx.strokeText(abreviatedNumber(this.player.totalXP), this.x, this.y + 15/3)
+                ctx.strokeText(abreviatedNumber(this.player.xp)+" / "+abreviatedNumber(this.player.xpToNext) , this.x, this.y + 15/3)
+                ctx.fillText(abreviatedNumber(this.player.xp)+" / "+abreviatedNumber(this.player.xpToNext), this.x, this.y + 15/3)
+                ctx.closePath()
+                break;
+            }
+            case "txp":  {
+                ctx.beginPath()
+                this.leaderboardTopPlayerinfo = leaderboard.tanks[0]
+                ctx.fillStyle = this.player.color
+                ctx.roundRect(this.x - this.width / 2, this.y - this.height / 2, this.width * Math.min(((this.player.totalXP)/(this.leaderboardTopPlayerinfo.totalXP)), 1), this.height, this.height)
+                ctx.fill()
+                ctx.closePath()
+                ctx.beginPath()
+                ctx.lineWidth = 4
+                ctx.lineJoin = "round"
+                ctx.font = "15px Ubuntu"
+                ctx.fillStyle = "white"
+                ctx.strokeStyle = "black"
+                ctx.textAlign = "center"
+                ctx.strokeText(abreviatedNumber(this.player.totalXP) , this.x, this.y + 15/3)
                 ctx.fillText(abreviatedNumber(this.player.totalXP), this.x, this.y + 15/3)
                 ctx.closePath()
+                break;
             }
         }
     }

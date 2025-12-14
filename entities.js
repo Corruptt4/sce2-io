@@ -470,6 +470,20 @@ export class Bullet {
         })
         shocks.push(shock)
     }
+    borderCheck() {
+        if (this.x > mapSizeX) {
+            this.velX -= 2
+        }
+        if (this.x < 0-mapSizeX/2) {
+            this.velX += 2
+        }
+        if (this.y > mapSizeX) {
+            this.velY -= 2
+        }
+        if (this.y < 0-mapSizeX/2) {
+            this.velY += 2
+        }
+    }
     desp() {
         this.despawnTick--
         if (this.despawnTick <= 0) {
@@ -519,24 +533,10 @@ export class Barrel {
         this.color = "rgb(135,135,135)"
     }
     reload() {
-        if (this.reloadTick > this.reloadMaxTick) {
-            this.reloadTick++
-        }
-        if (this.delayWait) {
-            this.delayReloadTick++
-        }
-        if (this.delayReloadTick >= Math.floor(this.reloadMaxTick*this.delay)) {
+        this.reloadTick++
+        if (this.reloadTick >= (this.reloadMaxTick * (1-this.delay))) {
+            this.reloadTick -= this.reloadMaxTick
             this.canShoot = true
-        }
-        
-        if (this.reloadTick >= this.reloadMaxTick) {
-            if (this.delay == 0) {
-                this.reloadTick = 0
-                this.canShoot = true
-            }
-            if (this.delay > 0) {
-                this.delayWait = true
-            }
         }
     }
     getGunTip() {
@@ -555,17 +555,8 @@ export class Barrel {
     shoot() {
         let s = this.getGunTip()
          if (this.canShoot) {
-            if (this.delay == 0) {
-                this.host.guns.forEach((gun) => {
-                    if (gun.delay > 0) {
-                        gun.noDelayCanShoot = true
-                    }
-                })
-            }
             this.canAnimate = true
             this.canShoot = false
-            this.delayWait = false
-            this.delayReloadTick = 0
             let bullet = new Bullet(s.x, s.y, 5*this.bulletSpeed*Math.cos(this.angle), 5*this.bulletSpeed*Math.sin(this.angle), this.host, (this.stats.damage * (1.03**this.host.level)), this.height*(this.host.size/10)/2, (this.stats.bulletHealth * (1.03**this.host.level)))
             bullets.push(bullet)
         }
@@ -626,6 +617,7 @@ export class Tank {
         this.color = color;
         this.mx = null
         this.my = null
+        this.autoSpins = 0
         this.diet = []
         this.entities = []
         this.collisionArray = []
@@ -666,17 +658,17 @@ export class Tank {
             new UpgradeButton(12, Mono, this, true, 0, 2),
         ]
         this.guns = []
-        for (let i = 0, n = 2; i < n; i++) {
+        for (let i = 0, n = 5; i < n; i++) {
             this.guns.push(
-                new Barrel(0, 0, 18, 9, this, {
+                new Barrel(0, 0, 30 - 3.2*i, 8, this, {
                     reload: 15,
                     damage: 15,
                     bulletHealth: 50,
                     angleOffset: 0,
-                    offsetY: [5.5, -5.5][i],
+                    offsetY: 0,
                     offsetX: 0,
-                    delay: [0, 0.5][i],
-                    bulletSpeed: 1.45
+                    delay: [0, 0.2, 0.4, 0.6, 0.8][i],
+                    bulletSpeed: 1.7
                 })
             )
         }
@@ -811,7 +803,7 @@ export class Tank {
             }
 
             if (this.autoSpin) {
-                this.angle += 0.03
+                this.angle += 0.03 * Math.pow(-1, (this.autoSpins))
                 if (Math.abs(this.angle) == Math.PI * 2) {
                     this.angle = 0
                 }
