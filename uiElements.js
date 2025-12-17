@@ -252,8 +252,8 @@ export class InfoBar {
                 ctx.fill()
                 ctx.fillStyle = "white"
                 ctx.strokeStyle = "black"
-                ctx.strokeText("Level: " + this.player.level + " " +  this.player.weaponUpgrade + "-" + this.player.bodyUpgrade, this.x, this.y + 15/3 + 12)
-                ctx.fillText("Level: " + this.player.level + " " +  this.player.weaponUpgrade + "-" + this.player.bodyUpgrade, this.x, this.y + 15/3 + 12)
+                ctx.strokeText("Level " + this.player.level + " " +  this.player.weaponUpgrade + "-" + this.player.bodyUpgrade, this.x, this.y + 15/3 + 12)
+                ctx.fillText("Level " + this.player.level + " " +  this.player.weaponUpgrade + "-" + this.player.bodyUpgrade, this.x, this.y + 15/3 + 12)
                 ctx.closePath()
                 break;
             }
