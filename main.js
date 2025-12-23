@@ -25,7 +25,7 @@ export let player = null
 export let globalStuff = globalPolygons.concat(bullets.concat(player).concat(globalBots))
 
 
-import { updateCamera } from "./miscellaneous.js"
+import { updateCamera, boxClick } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
 import { Polygon, TeamZone, BlackOut, Tank } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
@@ -183,6 +183,13 @@ document.addEventListener("keyup", (e) => {
 document.addEventListener("mousedown", (e) => {
     if (e.button == 0) {
         player.holdMouse = true
+
+        player.upgradeButtons.forEach((b) => {
+            b.whichTank.tankUpgrading = player
+            if (boxClick(mx-camera.x, my-camera.y, b.x, b.y, 80, 80)) {
+                b.whichTank.upgrade()
+            }
+        })
     }
 })
 document.addEventListener("mouseup", (e) => {
@@ -541,11 +548,6 @@ function render() {
         blackOut.draw(ctx)
     }
     player.faceMouse()
-    player.upgradeButtons.forEach((upg) => {
-        if (player.level >= upg.levelRequirement && player.tier == upg.tier) {
-            upg.draw()
-        }
-    })
     
     infoBars.forEach((inf, index) => {
         inf.draw()
@@ -562,6 +564,11 @@ function render() {
     // qt.draw(ctx, camera)
     killNotifs.forEach((notif) => {
         notif.draw()
+    })
+    player.upgradeButtons.forEach((upg) => {
+        if (player.level >= upg.levelRequirement && player.tier == upg.tier) {
+            upg.draw()
+        }
     })
     fps++
     requestAnimationFrame(render)

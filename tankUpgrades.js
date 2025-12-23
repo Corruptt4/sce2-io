@@ -64,54 +64,62 @@ export class BarrelForImage {
     }
 }
 export class TankUpgrade {
-    constructor(weapon, body, guns, bodyUpg, size) {
+    constructor(weapon, body, guns, bodyUpg, size, name) {
         this.isWeapon = weapon
         this.isBody = body
-        this.guns = guns
+        this.guns = [...guns]
+        this.name = name || "Unknown";
         this.bodyUpg = bodyUpg;
         this.ang = 0;
-        this.size = size
+        this.size = size;
+        this.tankUpgrading = null;
         this.image;
         this.upgradeButtons = []
         this.dataURL = null
     }
 
+    
+    upgrade() {
+       this.tankUpgrading.decodeUpgrade(this.isWeapon, this.guns, this)
+    }
     getImage() {
         if (this.isWeapon) {
             let imageCanv = document.createElement("canvas")
             imageCanv.width = 300
             imageCanv.height = 300
             let ctx2 = imageCanv.getContext("2d")
+            var size = this.size
+            this.guns.forEach((g) => {
+                ctx2.save()
+                ctx2.beginPath()
+                ctx2.translate(150, 150)
+                ctx2.rotate(degToRads(g.stats.angleOffset) + this.ang)
+                ctx2.lineJoin = "round"
+                ctx2.fillStyle = "rgb(135, 135, 135)"
+                ctx2.strokeStyle = darkenRGB("rgb(135, 135, 135)", 15)
+                ctx2.lineWidth = 10
+                ctx2.roundRect(
+                g.stats.offsetX*(size/10), 
+                (-g.height/2+g.stats.offsetY)*(size/10),
+                 g.width * (size/10), 
+                 g.height * (size/10), 0)
+                ctx2.fill()
+                ctx2.stroke()
+                ctx2.closePath()
+                ctx2.restore()
+            })
             ctx2.save()
             ctx2.beginPath()
             ctx2.translate(150, 150)
             ctx2.rotate(this.ang)
             ctx2.fillStyle = player.color
             ctx2.strokeStyle = darkenRGB(player.color, 15)
-            var size = this.size
             ctx2.arc(0, 0, size, 0, Math.PI * 2)
             ctx2.lineWidth = 10
             ctx2.fill()
             ctx2.stroke()
             ctx2.closePath()
             ctx2.restore()
-            
-            this.guns.forEach((g) => {
-                ctx2.save()
-                ctx2.beginPath()
-                ctx2.translate(150, 150)
-                ctx2.rotate(g.stats.angleOffset)
-                ctx2.fillStyle = "rgb(135, 135, 135)"
-                ctx2.strokeStyle = darkenRGB("rgb(135, 135, 135)", 15)
-                ctx2.roundRect(g.stats.offsetX*(size/10), 
-                (-g.height/2+g.stats.offsetY)*(size/10),
-                 g.width * (size/10), 
-                 g.height * (size/10), 0)
-                ctx2.closePath()
-                ctx2.fill()
-                ctx2.stroke()
-                ctx2.restore()
-            })
             this.dataURL = imageCanv.toDataURL("image/png")
             let img = new Image()
             img.src = this.dataURL
@@ -121,16 +129,22 @@ export class TankUpgrade {
 }
 export class UpgradeButton {
     constructor(req, upgrade, tank, offX, tier) {
-        this.x = 0
         this.levelRequirement = req
         this.offsetX = offX
         this.upgrade = upgrade
         this.whichTank = tank
         this.isWeapon = tank.isWeapon 
+        this.tankUpgrading= null;
         this.image = null
+        this.ang = 0
         this.tier = tier || 0
+        this.y = 0
+        this.x = 0
     }
+
     draw() {
+        this.y = canvas.height-90
+        this.x = (this.isWeapon ? 0 : canvas.width)+(this.isWeapon ? 10 + this.offsetX : (-10-this.offsetX))
         ctx.beginPath()
         ctx.fillStyle = "rgba(136, 154, 255,0.7)"
         ctx.roundRect(
@@ -150,13 +164,50 @@ export class UpgradeButton {
         ctx.drawImage(
             this.image,
             (this.isWeapon ? 0 : canvas.width)+(this.isWeapon ? 10 + this.offsetX : (-10-this.offsetX)), 
-            canvas.height-90, 80, 80
+            canvas.height-95, 80, 80
         )
         ctx.closePath()
-        this.whichTank.angle += 0.01
+
+        ctx.beginPath()
+        ctx.fillStyle  = "white"
+        ctx.strokeStyle = "black"
+        ctx.font = "12px Arial"
+        ctx.textAlign = "center"
+        ctx.lineWidth = 4
+        ctx.strokeText(
+            this.whichTank.name, 
+            (this.isWeapon ? 0 : canvas.width)+(this.isWeapon ? 10 + this.offsetX : (10-this.offsetX))+40, 
+            canvas.height-20
+        )
+        ctx.fillText(
+            this.whichTank.name, 
+            (this.isWeapon ? 0 : canvas.width)+(this.isWeapon ? 10 + this.offsetX : (10-this.offsetX))+40, 
+            canvas.height-20
+        )
+        ctx.closePath()
     }
 }
 
-export var MonoWeapon = new TankUpgrade(true, false, [], [], 60)
-MonoWeapon.guns.push(new BarrelForImage(0, 0, 20, 20, MonoWeapon, {}))
+/**
+ * reload: 15,
+    damage: 15,
+    bulletHealth: 50,
+    angleOffset: 0,
+    offsetY: 0,
+    offsetX: 0,
+    delay: [0, 0.2, 0.4, 0.6, 0.8][i],
+    bulletSpeed: 1.7
+ */
+
+export var MonoWeapon = new TankUpgrade(true, false, [], [], 60, "Stem")
+MonoWeapon.guns.push(new BarrelForImage(0, 0, 18, 8, MonoWeapon, {
+    reload: 15,
+    damage: 20,
+    bulletHealth: 60,
+    bulletSpeed: 1.7,
+    delay: 0,
+    angleOffset: 0,
+    offsetX: 0,
+    offsetY: 0
+}))
 export var Mono = new UpgradeButton(0, 0, MonoWeapon, 10, 0)

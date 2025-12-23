@@ -540,8 +540,8 @@ export class Barrel {
         }
     }
     getGunTip() {
-        let gunX = this.x + this.host.x
-        let gunY = this.y + this.host.y;
+        let gunX = this.host.x
+        let gunY = this.host.y;
     
         let tipX = gunX + (this.width + this.offsetX) * (this.host.size / 10) * Math.cos(this.angle)
                          - this.offsetY * (this.host.size / 10) * Math.sin(this.angle);
@@ -657,11 +657,16 @@ export class Tank {
         this.upgradeButtons = [
             Mono
         ]
+        this.upgradeButtons.forEach((button) => {
+            button.tankUpgrading = this
+        })
         this.guns = []
-        for (let i = 0, n = 5; i < n; i++) {
-            this.guns.push(
-                new Barrel(0, 0, 30 - 3.2*i, 8, this, {
-                    reload: 15,
+    }
+  /**
+   * upgrade() {
+       this.tankUpgrading.decodeUpgrade(this.isWeapon, this.guns)
+    }
+       reload: 15,
                     damage: 15,
                     bulletHealth: 50,
                     angleOffset: 0,
@@ -669,8 +674,37 @@ export class Tank {
                     offsetX: 0,
                     delay: [0, 0.2, 0.4, 0.6, 0.8][i],
                     bulletSpeed: 1.7
+
+                      constructor(x, y, width, height, host, stats = {
+        reload: 30,
+        damage: 15,
+        bulletHealth: 100,
+        offsetX: 0,
+        offsetY: 0,
+        bulletSpeed: 1,
+        angleOffset: 0,
+        delay: 0
+    })
+   */
+    decodeUpgrade(isWeapon, gunsReceived, tank) {
+        if (isWeapon) {
+            this.guns = []
+            this.weaponUpgrade = tank.name
+            gunsReceived.forEach((gun) => {
+                let gunStats = gun.stats
+                let decodedGun = new Barrel(this.x, this.y, gun.width, gun.height, this, {
+                    reload: gunStats.reload,
+                    damage: gunStats.damage,
+                    bulletHealth: gunStats.bulletHealth,
+                    angleOffset: gunStats.angleOffset,
+                    offsetX: gunStats.offsetX,
+                    offsetY: gunStats.offsetY,
+                    delay: gunStats.delay,
+                    bulletSpeed: gunStats.bulletSpeed
                 })
-            )
+                this.guns.push(decodedGun)
+                console.log(decodedGun)
+            })
         }
     }
     
@@ -743,7 +777,6 @@ export class Tank {
             ctx.fill()
             ctx.closePath()
         }
-        this.upgradeButtons.forEach((upg) => upg.draw())
     }
     faceMouse() {
         if (this.mx != null && this.my != null && !this.autoSpin) {
