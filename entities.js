@@ -655,7 +655,7 @@ export class Tank {
         this.keys = { }
         this.tier = 0
         this.upgradeButtons = [
-            new UpgradeButton(12, Mono, this, true, 0, 2),
+            Mono
         ]
         this.guns = []
         for (let i = 0, n = 5; i < n; i++) {
@@ -743,6 +743,7 @@ export class Tank {
             ctx.fill()
             ctx.closePath()
         }
+        this.upgradeButtons.forEach((upg) => upg.draw())
     }
     faceMouse() {
         if (this.mx != null && this.my != null && !this.autoSpin) {
@@ -754,9 +755,22 @@ export class Tank {
     }
     define(tank) {
         if (tank.isWeapon) {
-            this.guns = tank.guns
-            this.weaponUpgrades = tank.weaponUpgrades
-        } else if (tank.isBody) {
+            this.guns = []
+            this.upgradeButtons = []
+            this.weaponUpgrade = tank.weaponUpgrade
+
+            if (tank.guns.length > 0) {
+                tank.guns.forEach((gun) => {
+                    this.guns.push(gun)
+                })
+            }
+            if (tank.weaponUpgrades.length > 0) {
+                tank.upgradeButtons.forEach((upg) => {
+                    this.upgradeButtons.push(upg)
+                })
+            }
+        } 
+         if (tank.isBody) {
             this.guns = tank.guns
             this.bodyUpgrades = tank.turrets
         }
