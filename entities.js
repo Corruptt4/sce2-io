@@ -651,6 +651,8 @@ export class Tank {
         this.weaponUpgrade = "Mono"
         this.bodyUpgrade = "Base"
 
+        this.chosenUpgrade = null;
+
         this.angle = 0;
         this.keys = { }
         this.tier = 0
@@ -686,6 +688,18 @@ export class Tank {
         delay: 0
     })
    */
+
+    autoUpgrade() {
+        if (this.type === "bot") {
+            if (this.chosenUpgrade == null) {
+                this.chosenUpgrade = randomElement(this.upgradeButtons)
+            }
+
+            if (this.chosenUpgrade) {
+                this.chosenUpgrade.whichTank.upgrade()
+            }
+        }
+    }
     decodeUpgrade(isWeapon, gunsReceived, tank) {
         if (isWeapon) {
             this.guns = []
@@ -703,7 +717,6 @@ export class Tank {
                     bulletSpeed: gunStats.bulletSpeed
                 })
                 this.guns.push(decodedGun)
-                console.log(decodedGun)
             })
         }
     }
@@ -734,6 +747,9 @@ export class Tank {
         }
     }
     draw() {
+        this.upgradeButtons.forEach((b) => {
+            b.whichTank.tankUpgrading = this
+        })
         this.guns.forEach((g) => {g.draw()})
         ctx.save()
         ctx.beginPath();

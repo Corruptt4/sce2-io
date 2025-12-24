@@ -25,7 +25,7 @@ export let player = null
 export let globalStuff = globalPolygons.concat(bullets.concat(player).concat(globalBots))
 
 
-import { updateCamera, boxClick } from "./miscellaneous.js"
+import { updateCamera, boxClick, randomElement } from "./miscellaneous.js"
 import { Spawner } from "./spawner.js"
 import { Polygon, TeamZone, BlackOut, Tank } from "./entities.js"
 import { QuadTree, Rect } from "./collisions/quadTree.js"
@@ -153,6 +153,7 @@ player = new Tank(
     randomTeam,
     1
 )
+player.type = "player"
 player.team = randomTeam+1
 window.addEventListener("resize", (e) => {
     camera.width = window.innerWidth
@@ -521,6 +522,15 @@ setInterval(() => {
     fps = 0
 }, 1000)
 function render() {
+    globalBots.concat(player).forEach((e) => {
+        e.upgradeButtons.forEach((b) => {
+            b.whichTank.tankUpgrading = e
+        })
+    })
+    globalBots.forEach((b) => {
+        if (b.type != "bot") return 0;
+        b.autoUpgrade()
+    })
     globalBots.concat(player).forEach((p) => {
         if (!leaderboard.tanks.includes(p)) {
             leaderboard.tanks.push(p)

@@ -12,3 +12,10 @@ export function degToRads(deg) {
 export function randomElement(list) {
     return list[Math.floor(Math.random() * list.length)]
 }
+
+export function boxClick(mx, my, x, y, w, h) {
+    return (
+        mx > x && mx < mx + w &&
+        my > y && my < my + h
+    )
+}
